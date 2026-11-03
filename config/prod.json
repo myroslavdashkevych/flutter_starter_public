@@ -1,0 +1,7 @@
+{
+  "ITEMS_API_BASE_URL": "https://rickandmortyapi.com/api",
+  "BACKEND_BASE_URL": "https://example.invalid/api",
+  "ITEMS_CACHE_TTL_MINUTES": 30,
+  "PRIVACY_POLICY_URL": "https://your-firebase-project.web.app/privacy",
+  "USAGE_DATA_SHARING_DEFAULT": true
+}

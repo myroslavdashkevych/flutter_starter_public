@@ -1,0 +1,11 @@
+# Launcher icons for the dev flavor. Regenerate with: fvm dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/icons/app_icon_dev.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  adaptive_icon_background: "#1F2937"
+  adaptive_icon_foreground: "assets/icons/app_icon_foreground_dev.png"
+  # The source images already keep the artwork inside the adaptive icon safe zone.
+  adaptive_icon_foreground_inset: 0
+  adaptive_icon_monochrome: "assets/icons/app_icon_monochrome.png"

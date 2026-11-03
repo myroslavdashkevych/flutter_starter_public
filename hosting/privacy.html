@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy policy - Flutter Starter</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<!--
+  CHANGE FOR A NEW PROJECT (see docs/store-release.md):
+  - the app name and the contact email everywhere on this page;
+  - "who is responsible": the legal name and address of the developer;
+  - the date below, whenever the content changes;
+  - the data table, if SDKs are added or removed, or a backend stores user data;
+  - "Content from other services": replace with the services the new app calls;
+  - "Children": review it against the target audience of the new app;
+  - the Analytics retention period: check it in the Analytics property settings.
+-->
+<main>
+  <h1>Privacy policy</h1>
+  <p class="updated">Flutter Starter. Last updated: November 2, 2026.</p>
+
+  <p>This policy explains what data the Flutter Starter mobile app collects, why, how long it is
+    kept and what choices you have.</p>
+
+  <h2>Who is responsible</h2>
+  <p>The developer of Flutter Starter is responsible for your data. Contact:
+    <a href="mailto:support@example.com">support@example.com</a>.
+    Google provides the Firebase services listed below and processes this data on the
+    developer's behalf.</p>
+
+  <h2>Data the app collects</h2>
+  <div class="table">
+    <table>
+      <thead>
+        <tr><th>Service</th><th>Data</th><th>Purpose</th><th>Kept for</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Firebase Authentication, only if you create an account</td>
+          <td>Email address, password, user ID (UID). IP address and user agent during
+            sign-up and sign-in.</td>
+          <td>Account management, security and abuse prevention</td>
+          <td>Until the account is deleted, then removed from backups within 180 days. IP
+            addresses: a few weeks.</td>
+        </tr>
+        <tr>
+          <td>Firebase Crashlytics</td>
+          <td>Crash reports: stack traces and app state at the time of the crash. Device data:
+            manufacturer, model, operating system, network connection type. App data: package
+            name, version, time the app was opened. Crashlytics installation UUID and Firebase
+            Installation ID. Your UID, if you are signed in.</td>
+          <td>Finding and fixing crashes</td>
+          <td>90 days</td>
+        </tr>
+        <tr>
+          <td>Firebase Analytics</td>
+          <td>How you use the app: screens viewed and actions such as adding a favorite. App
+            instance ID. Device and session data. Approximate location derived from your IP
+            address. On Android, the Advertising ID, unless you have turned off or deleted it in
+            the device settings. On iOS, the Vendor Identifier: the app does not ask for
+            tracking permission, so it does not receive the Advertising Identifier (IDFA).</td>
+          <td>Understanding how the app is used and improving it. The app shows no ads and does
+            not link this data to your account.</td>
+          <td>Up to 14 months</td>
+        </tr>
+        <tr>
+          <td>Firebase Cloud Messaging</td>
+          <td>Firebase Installation ID. On iOS, also the APNs token, device model, language, time
+            zone, operating system version, app identifier and version.</td>
+          <td>Delivering notifications</td>
+          <td>Until deleted on request, then removed from backups within 180 days</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>All of this data is encrypted in transit. It is not sold and not used for advertising.</p>
+
+  <h2>Data that stays on your device</h2>
+  <p>Your favorites, the cached list of items, and your theme, language and data sharing settings
+    are stored only on your device. Uninstalling the app removes them.</p>
+
+  <h2>Content from other services</h2>
+  <p>The list of items and their images come from the public
+    <a href="https://rickandmortyapi.com">Rick and Morty API</a>. Like any website, this service
+    receives your IP address when the app loads content from it. The app sends it no account
+    data.</p>
+
+  <h2>Your choices</h2>
+  <ul>
+    <li><strong>Usage data.</strong> Sharing is on by default. Turn off "Share usage data" in
+      Settings to stop Firebase Analytics collection and crash reports, including the session data
+      sent with them. It works without an account and takes effect immediately, with one
+      exception: a crash in the app's native code during the same session can still be reported.
+      From the next launch, nothing from these services is sent.</li>
+    <li><strong>Notifications.</strong> Turn them off in the system settings of your device.
+      "Share usage data" does not affect them, because delivering a notification is not data
+      collection for analysis.</li>
+    <li><strong>Your account.</strong> Delete your account and its data in the app or by email:
+      see <a href="/delete-account">how to delete your account</a>.</li>
+  </ul>
+
+  <h2>Your rights</h2>
+  <p>Depending on where you live, you may have the right to access, correct, delete or export your
+    data, and to object to or restrict its processing. To use these rights, email
+    <a href="mailto:support@example.com">support@example.com</a>. You may also complain to
+    your local data protection authority.</p>
+
+  <h2>Children</h2>
+  <p>The app is not directed at children under 13. If you believe a child has created an account,
+    contact us and we will delete it.</p>
+
+  <h2>Changes to this policy</h2>
+  <p>When this policy changes, the date at the top of this page changes too.</p>
+
+  <h2>Google documentation</h2>
+  <ul>
+    <li><a href="https://firebase.google.com/support/privacy">Privacy and security in Firebase</a></li>
+    <li><a href="https://firebase.google.com/docs/android/play-data-disclosure">Data collected by Firebase SDKs on Android</a></li>
+    <li><a href="https://firebase.google.com/docs/ios/app-store-data-collection">Data collected by Firebase SDKs on iOS</a></li>
+    <li><a href="https://support.google.com/analytics/answer/11593727">Data collection in Google Analytics</a></li>
+  </ul>
+
+  <nav><a href="/delete-account">Delete your account</a> · <a href="/support">Support</a></nav>
+</main>
+</body>
+</html>

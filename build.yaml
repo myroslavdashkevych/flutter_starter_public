@@ -1,0 +1,25 @@
+targets:
+  $default:
+    builders:
+      freezed:
+        generate_for:
+          - lib/domain/**
+          - lib/data/**
+          - lib/presentation/**
+      json_serializable:
+        generate_for:
+          - lib/domain/**
+          - lib/data/**
+          - lib/presentation/**
+      retrofit_generator:
+        generate_for:
+          - lib/data/**/datasources/**
+      injectable_generator:injectable_builder:
+        generate_for:
+          - lib/**
+      injectable_generator:injectable_config_builder:
+        generate_for:
+          - lib/**
+      go_router_builder:
+        generate_for:
+          - lib/app/router/**

@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(fvm flutter --version)",
+      "Bash(fvm flutter pub get)",
+      "Bash(fvm flutter analyze*)",
+      "Bash(fvm flutter test*)",
+      "Bash(fvm dart format*)",
+      "Bash(fvm dart run build_runner build)",
+      "Bash(fvm flutter gen-l10n)",
+      "Bash(fvm dart run tool/check_imports.dart*)"
+    ],
+    "deny": [
+      "Read(**/lib/app/firebase/firebase_options*.dart)",
+      "Edit(**/lib/l10n/gen/**)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // \"\"'); case \"$f\" in *.dart) case \"$f\" in *.g.dart|*.freezed.dart|*.gr.dart|*.config.dart|*/lib/l10n/gen/*) ;; *) fvm dart format \"$f\" >/dev/null 2>&1 ;; esac ;; esac; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}

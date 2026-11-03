@@ -1,0 +1,114 @@
+name: flutter_starter
+description: "Flutter starter template for new mobile apps."
+publish_to: 'none' # An app, never published to pub.dev
+
+# Version: <major>.<minor>.<patch>+<build>. Change it once, right before a release.
+#
+# Pick the part by answering top to bottom; stop at the first "yes":
+#   1. major - Does the release break what users are used to?
+#      A feature or screen removed, a redesign, saved data migrated with no way
+#      back, a forced sign-in, a higher minimum Android/iOS version.
+#   2. minor - Does it add something new without breaking anything?
+#      A new screen, feature, setting or language.
+#   3. patch - Does it only fix things?
+#      Bug and crash fixes, text fixes, speed-ups, dependency updates.
+#
+# Raise it by 1, zero the parts after it: 1.4.2 -> 2.0.0 / 1.5.0 / 1.4.3.
+#
+# Build: +1 for every store upload (TestFlight and test tracks too), never reset:
+# 1.4.2+17 -> 1.5.0+18. Stores reject a build number they have already seen.
+version: 0.0.1+1
+
+environment:
+  sdk: ^3.13.5
+
+# Each line says what a package is for. Why it was chosen and its alternatives:
+# docs/tech-stack.md. Which layer may import it: docs/architecture.md section 3.
+# Any change here needs explicit approval (CLAUDE.md).
+dependencies:
+  # --- Flutter SDK ---
+  flutter:
+    sdk: flutter
+  flutter_localizations:                # Material and Cupertino translations
+    sdk: flutter
+  intl: any                             # Formatting; version set by the SDK
+
+  # --- State management ---
+  flutter_bloc: ^9.1.1                  # BLoC and Cubit for screen state
+  stream_transform: ^2.1.2              # debounce and switchMap for BLoC events
+
+  # --- Dependency injection ---
+  get_it: ^9.3.0                        # DI container, used only in app/
+  injectable: ^3.0.0                    # DI annotations; registration is generated
+
+  # --- Navigation ---
+  go_router: ^18.1.2                    # Routes, redirects, notification deep links
+
+  # --- Networking ---
+  dio: ^5.11.1                          # HTTP client
+  retrofit: ^4.10.0                     # Typed API clients generated on top of Dio
+
+  # --- Models ---
+  freezed_annotation: ^3.1.0            # Immutable entities, DTOs, states, unions
+  json_annotation: ^4.12.0              # JSON mapping for DTOs
+
+  # --- Local storage ---
+  hive_ce: ^2.22.0                      # API response cache and favorites
+  hive_ce_flutter: ^2.5.0               # Opens Hive in the app documents directory
+  shared_preferences: ^2.5.6            # Settings (SharedPreferencesAsync)
+
+  # --- Logging (all talker packages share one version; upgrade them together) ---
+  talker: ^5.2.0                        # Logging and error handling
+  talker_flutter: ^5.2.0                # In-app log screen
+  talker_bloc_logger: ^5.2.0            # Logs BLoC events and state changes
+  talker_dio_logger: ^5.2.0             # Logs HTTP requests without auth headers
+
+  # --- Firebase (FlutterFire is released together; upgrade all five at once) ---
+  firebase_core: ^5.1.0                 # Firebase initialization
+  firebase_auth: ^7.0.1                 # Email and password sign-in
+  firebase_crashlytics: ^6.0.1          # Crash reporting
+  firebase_analytics: ^13.0.1           # Usage analytics
+  firebase_messaging: ^17.0.1           # Push notifications
+
+  # --- Notifications ---
+  flutter_local_notifications: ^22.3.3  # Shows foreground pushes on Android
+
+  # --- Platform ---
+  package_info_plus: ^10.2.2            # App version for the settings page
+  url_launcher: ^6.3.3                  # Opens links in the in-app browser
+
+  # --- UI ---
+  cached_network_image_ce: ^4.13.1      # Network images with a disk cache
+
+dev_dependencies:
+  # --- Testing (fvm flutter test) ---
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.5                      # Mocks without code generation
+  bloc_test: ^10.0.0                    # BLoC and Cubit state transition tests
+
+  # --- Lints (fvm flutter analyze) ---
+  flutter_lints: ^6.0.0                 # Base lints, extended in analysis_options
+
+  # --- Code generation (fvm dart run build_runner build) ---
+  # TODO: held below 2.17 by pub until injectable_generator supports build 5
+  # (docs/tech-stack.md section 3).
+  build_runner: ^2.16.0                 # Runs all generators below
+  # TODO: held at 4.0.1 by pub; 4.0.2+ needs analyzer 14, which the Flutter SDK's
+  # test_api pin blocks (docs/tech-stack.md section 3).
+  freezed: ^4.0.1                       # Generates freezed classes
+  json_serializable: ^6.15.2            # Generates fromJson and toJson
+  injectable_generator: ^3.1.3          # Generates DI registration
+  retrofit_generator: ^10.3.2           # Generates API clients
+  go_router_builder: ^4.5.2             # Generates typed routes
+
+  # --- Asset tooling (writes platform files once; not used at runtime) ---
+  # Run after changing their config:
+  #   fvm dart run flutter_native_splash:create
+  #   fvm dart run flutter_launcher_icons
+  flutter_native_splash: ^2.4.8         # Native splash screens
+  flutter_launcher_icons: ^0.14.4       # Launcher icons per flavor
+
+flutter:
+  generate: true # Localizations from lib/l10n/arb: fvm flutter gen-l10n
+  uses-material-design: true

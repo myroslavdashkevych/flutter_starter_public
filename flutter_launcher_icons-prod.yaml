@@ -1,0 +1,11 @@
+# Launcher icons for the prod flavor. Regenerate with: fvm dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/icons/app_icon.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  adaptive_icon_background: "#1F2937"
+  adaptive_icon_foreground: "assets/icons/app_icon_foreground.png"
+  # The source images already keep the artwork inside the adaptive icon safe zone.
+  adaptive_icon_foreground_inset: 0
+  adaptive_icon_monochrome: "assets/icons/app_icon_monochrome.png"

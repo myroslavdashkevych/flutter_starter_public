@@ -1,0 +1,26 @@
+# Native splash configuration. Regenerate with:
+#   fvm dart run flutter_native_splash:create
+#
+# Colors: `colorScheme.surface` of AppTheme.light and AppTheme.dark
+# (lib/presentation/_shared/theme/app_theme.dart), so the splash background
+# matches the first app screen. Update them when the seed color changes, and
+# check them after a Flutter upgrade: ColorScheme.fromSeed output may change.
+#
+# Logos for a new project: 1152x1152 px, transparent background, the mark inside
+# a centered circle 768 px in diameter (Android 12+ clips everything outside it).
+flutter_native_splash:
+  android: true
+  ios: true
+  web: false
+
+  color: "#FBF8FF"
+  color_dark: "#121318"
+  image: assets/splash/splash_logo.png
+  image_dark: assets/splash/splash_logo_dark.png
+
+  # Android 12+ reads only this section.
+  android_12:
+    color: "#FBF8FF"
+    color_dark: "#121318"
+    image: assets/splash/splash_logo.png
+    image_dark: assets/splash/splash_logo_dark.png
