@@ -68,7 +68,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('a guest is asked to sign in', (tester) async {
+    testWidgets('FAV-6: a guest is asked to sign in', (tester) async {
       when(authRepository.authStateChanges)
           .thenAnswer((_) => Stream<AppUser?>.value(null));
       await pumpPage(tester);
@@ -80,7 +80,7 @@ void main() {
       expect(signInTaps, 1);
     });
 
-    testWidgets('an unknown auth state shows a progress indicator', (
+    testWidgets('FAV-12: an unknown auth state shows a progress indicator', (
       tester,
     ) async {
       when(authRepository.authStateChanges)
@@ -100,14 +100,16 @@ void main() {
       expect(find.text(guestMessage), findsNothing);
     });
 
-    testWidgets('no favorites shows the hint', (tester) async {
+    testWidgets('FAV-13: no favorites shows the hint', (tester) async {
       await pumpPage(tester);
 
       expect(find.textContaining('No favorites yet'), findsOneWidget);
       expect(find.text(guestMessage), findsNothing);
     });
 
-    testWidgets('lists the items in order and opens one', (tester) async {
+    testWidgets('FAV-5, FAV-14: lists the items in order and opens one', (
+      tester,
+    ) async {
       favorites = FakeFavoritesRepository([testItem(2), testItem(1)]);
       await pumpPage(tester);
 
@@ -120,7 +122,7 @@ void main() {
       expect(selected, [1]);
     });
 
-    testWidgets('removing a favorite takes it off the list at once', (
+    testWidgets('FAV-15: removing a favorite takes it off the list at once', (
       tester,
     ) async {
       favorites = FakeFavoritesRepository([testItem(2), testItem(1)]);
@@ -135,7 +137,9 @@ void main() {
       expect(find.byIcon(Icons.favorite), findsOneWidget);
     });
 
-    testWidgets('removing the last favorite shows the hint', (tester) async {
+    testWidgets('FAV-13: removing the last favorite shows the hint', (
+      tester,
+    ) async {
       favorites = FakeFavoritesRepository([testItem(1)]);
       await pumpPage(tester);
 
@@ -163,7 +167,9 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('removes the favorite and reports it once', (tester) async {
+    testWidgets('FAV-10: removes the favorite and reports it once', (
+      tester,
+    ) async {
       favorites = FakeFavoritesRepository([testItem(1)]);
       await pumpButton(tester);
 

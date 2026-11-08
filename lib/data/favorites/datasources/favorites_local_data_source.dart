@@ -12,7 +12,7 @@ class FavoriteRecord {
   final DateTime addedAt;
 }
 
-/// User data, not a cache (docs/architecture.md section 5.6): the user created
+/// User data, not a cache (docs/spec/architecture.md, Local storage): the user created
 /// it and it cannot be fetched again. Never expires and is never deleted
 /// automatically: only [delete] (the user removes a favorite) and [deleteBox]
 /// (the user deletes the account) remove records. Must not implement

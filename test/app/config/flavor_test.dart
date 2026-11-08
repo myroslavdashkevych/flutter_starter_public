@@ -7,12 +7,12 @@ void main() {
     expect(Flavor.fromName('prod'), Flavor.prod);
   });
 
-  test('usage data is always collected in dev', () {
+  test('SET-7: usage data is always collected in dev', () {
     expect(Flavor.dev.collectsUsageData(isDebug: true), isTrue);
     expect(Flavor.dev.collectsUsageData(isDebug: false), isTrue);
   });
 
-  test('usage data is collected in prod only outside debug builds', () {
+  test('SET-7: usage data is collected in prod only outside debug builds', () {
     expect(Flavor.prod.collectsUsageData(isDebug: true), isFalse);
     expect(Flavor.prod.collectsUsageData(isDebug: false), isTrue);
   });

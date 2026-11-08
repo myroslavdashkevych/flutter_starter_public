@@ -20,7 +20,7 @@ void main() {
   setUp(() => repository = MockAuthRepository());
 
   blocTest<ResetPasswordCubit, ResetPasswordState>(
-    'a malformed email is rejected',
+    'AUTH-1: a malformed email is rejected',
     build: () => ResetPasswordCubit(repository, FakeAnalyticsService()),
     act: (cubit) => cubit.submit(email: 'nope'),
     expect: () => [
@@ -46,7 +46,7 @@ void main() {
   );
 
   blocTest<ResetPasswordCubit, ResetPasswordState>(
-    'a failure is shown',
+    'AUTH-5: a failure is shown',
     setUp: () {
       when(() => repository.sendPasswordReset(email: email))
           .thenAnswer((_) async => const Err(failure));
@@ -59,7 +59,7 @@ void main() {
     ],
   );
 
-  group('analytics', () {
+  group('AUTH-8: analytics', () {
     late FakeAnalyticsService analytics;
 
     setUp(() => analytics = FakeAnalyticsService());

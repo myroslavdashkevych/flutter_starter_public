@@ -42,7 +42,7 @@ void main() {
     tearDown(() => router.dispose());
 
     for (final route in ['/items', '/items/1', '/items/1?source=push']) {
-      test('accepts $route', () {
+      test('NTF-6: accepts $route', () {
         expect(isOpenableRoute(router, route), isTrue);
       });
     }
@@ -57,7 +57,7 @@ void main() {
       'myapp://items/1',
       ':not a uri',
     ]) {
-      test('rejects "$route"', () {
+      test('NTF-7: rejects "$route"', () {
         expect(isOpenableRoute(router, route), isFalse);
       });
     }
@@ -86,7 +86,9 @@ void main() {
 
     tearDown(() => opened.close());
 
-    testWidgets('a tap with a valid route opens that screen', (tester) async {
+    testWidgets('NTF-6: a tap with a valid route opens that screen', (
+      tester,
+    ) async {
       await start(tester);
 
       opened.add(const NotificationMessage(route: '/items/1'));
@@ -95,7 +97,7 @@ void main() {
       expect(find.text('item 1'), findsOneWidget);
     });
 
-    testWidgets('the launch message arriving at once opens its screen', (
+    testWidgets('NTF-6: the launch message arriving at once opens its screen', (
       tester,
     ) async {
       opened.add(const NotificationMessage(route: '/items/2'));
@@ -105,7 +107,7 @@ void main() {
       expect(find.text('item 2'), findsOneWidget);
     });
 
-    testWidgets('an invalid route is ignored', (tester) async {
+    testWidgets('NTF-7: an invalid route is ignored', (tester) async {
       await start(tester);
 
       opened.add(const NotificationMessage(route: '/unknown'));
@@ -158,7 +160,7 @@ void main() {
       await registrationIds.close();
     });
 
-    test('initializes with the channel name and registers', () {
+    test('NTF-4: initializes with the channel name and registers', () {
       verifyInOrder([
         () => repository.initialize(channelName: 'General'),
         repository.registrationIdChanges,
@@ -176,7 +178,7 @@ void main() {
       );
     });
 
-    test('shows a foreground message with text', () async {
+    test('NTF-4: shows a foreground message with text', () async {
       const message = NotificationMessage(title: 'T', route: '/items/1');
       foreground.add(message);
       await pumpEventQueue();

@@ -22,7 +22,7 @@ void main() {
   setUp(() => repository = MockAuthRepository());
 
   blocTest<SignInCubit, SignInState>(
-    'an empty form shows errors and sends nothing',
+    'AUTH-1, AUTH-2: an empty form shows errors and sends nothing',
     build: () => SignInCubit(repository, FakeAnalyticsService()),
     act: (cubit) => cubit.submit(email: '', password: ''),
     expect: () => [
@@ -40,7 +40,7 @@ void main() {
   );
 
   blocTest<SignInCubit, SignInState>(
-    'a malformed email and a short password are rejected',
+    'AUTH-1, AUTH-2: a malformed email and a short password are rejected',
     build: () => SignInCubit(repository, FakeAnalyticsService()),
     act: (cubit) => cubit.submit(email: 'user@example', password: '12345'),
     expect: () => [
@@ -52,7 +52,7 @@ void main() {
   );
 
   blocTest<SignInCubit, SignInState>(
-    'success goes through submitting',
+    'AUTH-4: success goes through submitting',
     setUp: () {
       when(() => repository.signIn(email: email, password: password))
           .thenAnswer((_) async => const Ok(testUser));
@@ -66,7 +66,7 @@ void main() {
   );
 
   blocTest<SignInCubit, SignInState>(
-    'a failure is shown, and a new submit clears it',
+    'AUTH-5: a failure is shown, and a new submit clears it',
     setUp: () {
       when(() => repository.signIn(email: email, password: password))
           .thenAnswer((_) async => const Err(failure));
@@ -84,7 +84,7 @@ void main() {
     ],
   );
 
-  group('analytics', () {
+  group('AUTH-8: analytics', () {
     late FakeAnalyticsService analytics;
 
     setUp(() => analytics = FakeAnalyticsService());

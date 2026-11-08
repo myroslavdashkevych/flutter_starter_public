@@ -202,17 +202,18 @@ void main() {
   }
 
   group('guest', () {
-    testWidgets('starts on the items with the bottom navigation', (
-      tester,
-    ) async {
-      final router = await pumpApp(tester);
+    testWidgets(
+      'NAV-1, NAV-4: starts on the items with the bottom navigation',
+      (tester) async {
+        final router = await pumpApp(tester);
 
-      expect(location(router), '/items');
-      expect(find.text('Item 1'), findsOneWidget);
-      expect(navigationBar, findsOneWidget);
-    });
+        expect(location(router), '/items');
+        expect(find.text('Item 1'), findsOneWidget);
+        expect(navigationBar, findsOneWidget);
+      },
+    );
 
-    testWidgets('reaches item details and settings', (tester) async {
+    testWidgets('NAV-4: reaches item details and settings', (tester) async {
       final router = await pumpApp(tester);
 
       await tapText(tester, 'Item 1');
@@ -254,7 +255,7 @@ void main() {
   });
 
   group('after success', () {
-    testWidgets('sign-in returns to the profile', (tester) async {
+    testWidgets('NAV-6: sign-in returns to the profile', (tester) async {
       final router = await pumpApp(tester);
       await openSignIn(tester);
 
@@ -263,7 +264,7 @@ void main() {
       expectSignedInProfile(router);
     });
 
-    testWidgets('sign-up removes the whole auth stack', (tester) async {
+    testWidgets('NAV-6: sign-up removes the whole auth stack', (tester) async {
       final router = await pumpApp(tester);
       await openSignIn(tester);
       await tapText(tester, 'Create an account');
@@ -278,7 +279,7 @@ void main() {
       expectSignedInProfile(router);
     });
 
-    testWidgets('the other tabs keep their stacks', (tester) async {
+    testWidgets('NAV-6: the other tabs keep their stacks', (tester) async {
       final router = await pumpApp(tester);
       await tapText(tester, 'Item 1');
       await openSignIn(tester);
@@ -294,7 +295,7 @@ void main() {
     setUp(() => currentUser = testUser);
 
     for (final path in ['/sign-in', '/sign-up', '/reset-password']) {
-      testWidgets('$path goes to the profile', (tester) async {
+      testWidgets('NAV-5: $path goes to the profile', (tester) async {
         final router = await pumpApp(tester);
 
         router.go(path);
@@ -304,7 +305,9 @@ void main() {
       });
     }
 
-    testWidgets('signing out stays on the profile as a guest', (tester) async {
+    testWidgets('PRF-4: signing out stays on the profile as a guest', (
+      tester,
+    ) async {
       final router = await pumpApp(tester);
       await tapTab(tester, 'Profile');
 
@@ -321,7 +324,7 @@ void main() {
     final toggleOff = find.byIcon(Icons.favorite_border);
     final toggleOn = find.byIcon(Icons.favorite);
 
-    testWidgets('a guest sees no favorite controls', (tester) async {
+    testWidgets('FAV-2: a guest sees no favorite controls', (tester) async {
       await pumpApp(tester);
 
       expect(find.text('Item 1'), findsOneWidget);
@@ -335,7 +338,7 @@ void main() {
       expect(find.text('Favorites'), findsNothing);
     });
 
-    testWidgets('a guest on the favorites route is asked to sign in', (
+    testWidgets('FAV-6: a guest on the favorites route is asked to sign in', (
       tester,
     ) async {
       final router = await pumpApp(tester);
@@ -355,7 +358,9 @@ void main() {
     group('signed in', () {
       setUp(() => currentUser = testUser);
 
-      testWidgets('a change on one screen shows on the others', (tester) async {
+      testWidgets('FAV-3: a change on one screen shows on the others', (
+        tester,
+      ) async {
         final router = await pumpApp(tester);
 
         await tester.tap(toggleOff);
@@ -377,66 +382,69 @@ void main() {
         expect(toggleOn, findsNothing);
       });
 
-      testWidgets('a favorite opens its details inside the profile tab', (
-        tester,
-      ) async {
-        favorites.items.add(testItem(1));
-        final router = await pumpApp(tester);
-        await tapTab(tester, 'Profile');
-        await tapText(tester, 'Favorites');
+      testWidgets(
+        'FAV-14: a favorite opens its details inside the profile tab',
+        (tester) async {
+          favorites.items.add(testItem(1));
+          final router = await pumpApp(tester);
+          await tapTab(tester, 'Profile');
+          await tapText(tester, 'Favorites');
 
-        await tester.tap(find.text('Item 1'));
-        await tester.pumpAndSettle();
+          await tester.tap(find.text('Item 1'));
+          await tester.pumpAndSettle();
 
-        expect(location(router), '/profile/favorites/1');
-        expect(find.byType(ItemDetailsPage), findsOneWidget);
-        expect(navigationBar, findsOneWidget);
-        expect(toggleOn, findsOneWidget);
+          expect(location(router), '/profile/favorites/1');
+          expect(find.byType(ItemDetailsPage), findsOneWidget);
+          expect(navigationBar, findsOneWidget);
+          expect(toggleOn, findsOneWidget);
 
-        await tester.pageBack();
-        await tester.pumpAndSettle();
-        expect(location(router), '/profile/favorites');
-      });
+          await tester.pageBack();
+          await tester.pumpAndSettle();
+          expect(location(router), '/profile/favorites');
+        },
+      );
 
-      testWidgets('a missing item can be removed and returns to the list', (
-        tester,
-      ) async {
-        favorites.items.addAll([testItem(2), testItem(1)]);
-        final router = await pumpApp(tester);
-        await tapTab(tester, 'Profile');
-        await tapText(tester, 'Favorites');
+      testWidgets(
+        'FAV-10: a missing item can be removed and returns to the list',
+        (tester) async {
+          favorites.items.addAll([testItem(2), testItem(1)]);
+          final router = await pumpApp(tester);
+          await tapTab(tester, 'Profile');
+          await tapText(tester, 'Favorites');
 
-        await tester.tap(find.text('Item 2'));
-        await tester.pumpAndSettle();
+          await tester.tap(find.text('Item 2'));
+          await tester.pumpAndSettle();
 
-        expect(find.text('Nothing was found.'), findsOneWidget);
-        expect(find.text('Retry'), findsNothing);
+          expect(find.text('Nothing was found.'), findsOneWidget);
+          expect(find.text('Retry'), findsNothing);
 
-        await tester.tap(
-          find.widgetWithText(FilledButton, 'Remove from favorites'),
-        );
-        await tester.pumpAndSettle();
+          await tester.tap(
+            find.widgetWithText(FilledButton, 'Remove from favorites'),
+          );
+          await tester.pumpAndSettle();
 
-        expect(location(router), '/profile/favorites');
-        expect(find.text('Item 2'), findsNothing);
-        expect(find.text('Item 1'), findsOneWidget);
-      });
+          expect(location(router), '/profile/favorites');
+          expect(find.text('Item 2'), findsNothing);
+          expect(find.text('Item 1'), findsOneWidget);
+        },
+      );
 
-      testWidgets('a missing item in the items tab keeps the retry', (
-        tester,
-      ) async {
-        final router = await pumpApp(tester);
+      testWidgets(
+        'FAV-10, ITM-15: a missing item in the items tab keeps the retry',
+        (tester) async {
+          final router = await pumpApp(tester);
 
-        router.go('/items/2');
-        await tester.pumpAndSettle();
+          router.go('/items/2');
+          await tester.pumpAndSettle();
 
-        expect(find.text('Retry'), findsOneWidget);
-        expect(find.text('Remove from favorites'), findsNothing);
-      });
+          expect(find.text('Retry'), findsOneWidget);
+          expect(find.text('Remove from favorites'), findsNothing);
+        },
+      );
     });
   });
 
-  group('screen views', () {
+  group('OBS-3: screen views', () {
     testWidgets('closing sign-in reports the tab under it', (tester) async {
       await pumpApp(tester);
       await openSignIn(tester);

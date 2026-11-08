@@ -40,11 +40,14 @@ void main() {
       );
     });
 
-    test('falls back to system when values are missing', () async {
-      stubStored();
+    test(
+      'SET-1, SET-2: falls back to system when values are missing',
+      () async {
+        stubStored();
 
-      expect(await repository.load(), const AppSettings());
-    });
+        expect(await repository.load(), const AppSettings());
+      },
+    );
 
     test('falls back to system for unknown values', () async {
       stubStored(theme: 'sepia', locale: 'de');
@@ -58,12 +61,15 @@ void main() {
       expect((await repository.load()).usageDataSharing, isFalse);
     });
 
-    test('uses the default from the config when nothing is stored', () async {
-      stubStored();
-      final optIn = SettingsRepositoryImpl(dataSource, talker, false);
+    test(
+      'SET-6: uses the default from the config when nothing is stored',
+      () async {
+        stubStored();
+        final optIn = SettingsRepositoryImpl(dataSource, talker, false);
 
-      expect((await optIn.load()).usageDataSharing, isFalse);
-    });
+        expect((await optIn.load()).usageDataSharing, isFalse);
+      },
+    );
 
     test('a storage error also uses the default from the config', () async {
       when(() => dataSource.readTheme()).thenThrow(Exception('broken'));

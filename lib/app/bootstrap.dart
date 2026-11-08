@@ -69,7 +69,7 @@ Future<void> bootstrap() async {
 }
 
 /// Lists every [ExpiringCache]; add a new cache here. User data never goes
-/// here (docs/architecture.md section 5.6).
+/// here (docs/spec/architecture.md, Local storage).
 Future<void> _evictExpiredCaches() async {
   final List<ExpiringCache> caches = [getIt<ItemsLocalDataSource>()];
   for (final cache in caches) {

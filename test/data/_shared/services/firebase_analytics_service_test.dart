@@ -26,7 +26,7 @@ void main() {
     verify(() => analytics.setAnalyticsCollectionEnabled(false)).called(1);
   });
 
-  test('logEvent sends the name and parameters', () async {
+  test('OBS-5: logEvent sends the name and parameters', () async {
     when(() => analytics.logEvent(name: 'login', parameters: {'method': 'x'}))
         .thenAnswer((_) async {});
 

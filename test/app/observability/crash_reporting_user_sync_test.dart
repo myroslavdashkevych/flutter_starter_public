@@ -10,23 +10,26 @@ import '../../helpers/fake_crash_reporting_service.dart';
 import '../../helpers/mocks.dart';
 
 void main() {
-  test('sets the id after sign-in and clears it after sign-out', () async {
-    final users = StreamController<AppUser?>();
-    addTearDown(users.close);
-    final repository = MockAuthRepository();
-    when(repository.authStateChanges).thenAnswer((_) => users.stream);
-    final crashReporting = FakeCrashReportingService();
+  test(
+    'OBS-2: sets the id after sign-in and clears it after sign-out',
+    () async {
+      final users = StreamController<AppUser?>();
+      addTearDown(users.close);
+      final repository = MockAuthRepository();
+      when(repository.authStateChanges).thenAnswer((_) => users.stream);
+      final crashReporting = FakeCrashReportingService();
 
-    final subscription = syncCrashReportingUser(
-      authRepository: repository,
-      crashReporting: crashReporting,
-    );
-    addTearDown(subscription.cancel);
-    users
-      ..add(testUser)
-      ..add(null);
-    await Future<void>.delayed(Duration.zero);
+      final subscription = syncCrashReportingUser(
+        authRepository: repository,
+        crashReporting: crashReporting,
+      );
+      addTearDown(subscription.cancel);
+      users
+        ..add(testUser)
+        ..add(null);
+      await Future<void>.delayed(Duration.zero);
 
-    expect(crashReporting.userIds, [testUser.id, null]);
-  });
+      expect(crashReporting.userIds, [testUser.id, null]);
+    },
+  );
 }

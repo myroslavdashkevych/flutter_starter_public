@@ -5,8 +5,8 @@ import 'package:flutter_starter/domain/items/entities/item.dart';
 import 'package:flutter_starter/presentation/_shared/l10n/failure_messages.dart';
 import 'package:flutter_starter/presentation/_shared/l10n/item_status_labels.dart';
 import 'package:flutter_starter/presentation/_shared/l10n/l10n_extension.dart';
-import 'package:flutter_starter/presentation/_shared/widgets/failure_view.dart';
-import 'package:flutter_starter/presentation/_shared/widgets/item_image.dart';
+import 'package:flutter_starter/presentation/_shared/widgets/item/item_image.dart';
+import 'package:flutter_starter/presentation/_shared/widgets/state/failure_view.dart';
 import 'package:flutter_starter/presentation/item_details/bloc/item_details_cubit.dart';
 import 'package:flutter_starter/presentation/item_details/bloc/item_details_state.dart';
 

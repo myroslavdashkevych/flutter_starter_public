@@ -25,23 +25,29 @@ void main() {
     prompts = 0;
   });
 
-  test('"Allow" leads to the system request and sets the flag', () async {
-    await useCase(askUser: answering(true));
+  test(
+    'NTF-2: "Allow" leads to the system request and sets the flag',
+    () async {
+      await useCase(askUser: answering(true));
 
-    expect(prompts, 1);
-    expect(repository.permissionRequests, 1);
-    expect(repository.asked, isTrue);
-  });
+      expect(prompts, 1);
+      expect(repository.permissionRequests, 1);
+      expect(repository.asked, isTrue);
+    },
+  );
 
-  test('"Not now" sets the flag without the system request', () async {
-    await useCase(askUser: answering(false));
+  test(
+    'NTF-2, NTF-3: "Not now" sets the flag without the system request',
+    () async {
+      await useCase(askUser: answering(false));
 
-    expect(prompts, 1);
-    expect(repository.permissionRequests, 0);
-    expect(repository.asked, isTrue);
-  });
+      expect(prompts, 1);
+      expect(repository.permissionRequests, 0);
+      expect(repository.asked, isTrue);
+    },
+  );
 
-  test('does not ask again after any answer', () async {
+  test('NTF-2: does not ask again after any answer', () async {
     await useCase(askUser: answering(false));
     await useCase(askUser: answering(true));
 

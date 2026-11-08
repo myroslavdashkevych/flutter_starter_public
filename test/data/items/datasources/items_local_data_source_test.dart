@@ -54,7 +54,7 @@ void main() {
       expect(await dataSource.readPage(page: 1), isNull);
     });
 
-    test('writing a page also stores each of its items', () async {
+    test('ITM-12: writing a page also stores each of its items', () async {
       await dataSource.writePage(page: 1, dto: testPageDto(ids: [3, 4]));
 
       expect((await dataSource.readItem(3))!.data, testCharacterDto(3));
@@ -123,15 +123,18 @@ void main() {
       Future<Iterable<dynamic>> cachedKeys() async =>
           (await Hive.openLazyBox<String>(ItemsLocalDataSource.boxName)).keys;
 
-      test('deletes records older than maxAge and keeps newer ones', () async {
-        expect(ItemsLocalDataSource.maxAge, const Duration(days: 90));
-        await putRaw('item:1', envelope(ageInDays: 91));
-        await putRaw('item:2', envelope(ageInDays: 89));
+      test(
+        'ITM-13: deletes records older than maxAge and keeps newer ones',
+        () async {
+          expect(ItemsLocalDataSource.maxAge, const Duration(days: 90));
+          await putRaw('item:1', envelope(ageInDays: 91));
+          await putRaw('item:2', envelope(ageInDays: 89));
 
-        await dataSource.evictExpired();
+          await dataSource.evictExpired();
 
-        expect(await cachedKeys(), ['item:2']);
-      });
+          expect(await cachedKeys(), ['item:2']);
+        },
+      );
 
       test('deletes records with another schema or unreadable', () async {
         await putRaw('item:1', envelope(ageInDays: 0, schemaVersion: 0));

@@ -92,7 +92,7 @@ void main() {
   });
 
   group('getPage', () {
-    test('a fresh cache hit does not use the network', () async {
+    test('ITM-10: a fresh cache hit does not use the network', () async {
       stubCachedPage(cachedPage);
 
       final result = await getPage();
@@ -111,7 +111,7 @@ void main() {
           .called(1);
     });
 
-    test('an expired cache fetches again', () async {
+    test('ITM-10: an expired cache fetches again', () async {
       stubCachedPage(cachedPage, fetchedAt: expired());
 
       final result = await getPage();
@@ -119,7 +119,7 @@ void main() {
       expect((result as Ok<Paginated<Item>>).value, pageWith(1));
     });
 
-    test('forceRefresh skips a fresh cache', () async {
+    test('ITM-4: forceRefresh skips a fresh cache', () async {
       stubCachedPage(cachedPage);
 
       final result = await getPage(forceRefresh: true);
@@ -127,7 +127,7 @@ void main() {
       expect((result as Ok<Paginated<Item>>).value, pageWith(1));
     });
 
-    test('a network failure returns the stale cache', () async {
+    test('ITM-11: a network failure returns the stale cache', () async {
       stubCachedPage(cachedPage, fetchedAt: expired());
       when(() => api.getCharacters(1, 'rick')).thenThrow(connectionError);
 
@@ -136,7 +136,19 @@ void main() {
       expect((result as Ok<Paginated<Item>>).value, pageWith(2));
     });
 
-    test('a server failure returns the stale cache', () async {
+    test(
+      'ITM-4, ITM-11: a refresh without a connection returns the cache',
+      () async {
+        stubCachedPage(cachedPage);
+        when(() => api.getCharacters(1, 'rick')).thenThrow(connectionError);
+
+        final result = await getPage(forceRefresh: true);
+
+        expect((result as Ok<Paginated<Item>>).value, pageWith(2));
+      },
+    );
+
+    test('ITM-11: a server failure returns the stale cache', () async {
       stubCachedPage(cachedPage, fetchedAt: expired());
       when(() => api.getCharacters(1, 'rick')).thenThrow(httpError(500));
 
@@ -145,7 +157,7 @@ void main() {
       expect((result as Ok<Paginated<Item>>).value, pageWith(2));
     });
 
-    test('a network failure without cache is a failure', () async {
+    test('ITM-11: a network failure without cache is a failure', () async {
       stubCachedPage(null);
       when(() => api.getCharacters(1, 'rick')).thenThrow(connectionError);
 
@@ -154,7 +166,7 @@ void main() {
       expect((result as Err).failure, const Failure.network());
     });
 
-    test('an unexpected failure ignores the stale cache', () async {
+    test('ITM-11: an unexpected failure ignores the stale cache', () async {
       stubCachedPage(cachedPage, fetchedAt: expired());
       when(() => api.getCharacters(1, 'rick'))
           .thenThrow(const FormatException());
@@ -164,7 +176,7 @@ void main() {
       expect((result as Err).failure, const Failure.unexpected());
     });
 
-    test('a 404 is an empty last page and is not cached', () async {
+    test('ITM-6: a 404 is an empty last page and is not cached', () async {
       stubCachedPage(null);
       when(() => api.getCharacters(1, 'rick')).thenThrow(httpError(404));
 
@@ -185,7 +197,7 @@ void main() {
   });
 
   group('getById', () {
-    test('a fresh cache hit does not use the network', () async {
+    test('ITM-10: a fresh cache hit does not use the network', () async {
       stubCachedItem(fetchedAt: fresh());
 
       final result = await repository.getById(2);
@@ -194,7 +206,7 @@ void main() {
       verifyNever(() => api.getCharacter(any()));
     });
 
-    test('an expired cache fetches and stores the item', () async {
+    test('ITM-10: an expired cache fetches and stores the item', () async {
       stubCachedItem(fetchedAt: expired());
       when(() => api.getCharacter(2))
           .thenAnswer((_) async => testCharacterDto(2));
@@ -206,7 +218,7 @@ void main() {
       verify(() => local.writeItem(testCharacterDto(2))).called(1);
     });
 
-    test('a network failure returns the stale cache', () async {
+    test('ITM-11: a network failure returns the stale cache', () async {
       stubCachedItem(fetchedAt: expired());
       when(() => api.getCharacter(2)).thenThrow(connectionError);
 
@@ -215,7 +227,7 @@ void main() {
       expect((result as Ok<Item>).value, testItem(2));
     });
 
-    test('a 404 is a failure, even with a stale cache', () async {
+    test('ITM-16: a 404 is a failure, even with a stale cache', () async {
       stubCachedItem(fetchedAt: expired());
       when(() => api.getCharacter(2)).thenThrow(httpError(404));
 

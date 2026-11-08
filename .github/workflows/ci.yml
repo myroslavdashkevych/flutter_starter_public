@@ -16,12 +16,14 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     # About 3x the usual run time; raise it as the project grows
-    # (docs/setup.md section 9).
+    # (docs/guides/setup.md, CI).
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          # Full history, so tool/check_spec.dart can read the base revision.
+          fetch-depth: 0
       - uses: subosito/flutter-action@v2
         with:
           flutter-version-file: .fvmrc
@@ -32,4 +34,27 @@ jobs:
       - run: dart format --output=none --set-exit-if-changed lib test tool
       - run: flutter analyze
       - run: dart run tool/check_imports.dart
+      # Compares with the base: the PR's target branch, or the previous tip
+      # of the pushed branch (none on a branch's first push).
+      - name: Run dart run tool/check_spec.dart
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT" = pull_request ]; then
+            dart run tool/check_spec.dart --base "origin/$BASE_REF"
+          elif [ -n "$BEFORE" ] && [ "$BEFORE" != 0000000000000000000000000000000000000000 ]; then
+            dart run tool/check_spec.dart --base "$BEFORE"
+          else
+            dart run tool/check_spec.dart
+          fi
       - run: flutter test
+      # A change may land in several pull requests, and its last one deletes
+      # the change folder (docs/README.md, Changes). This step only warns, so a
+      # forgotten folder stays visible without failing the job.
+      - name: Change folders in flight
+        run: |
+          for left in $(find docs/changes -mindepth 1 -maxdepth 1 ! -name _template); do
+            echo "::warning::$left is still here: the last pull request of its change deletes it (docs/README.md, Changes)"
+          done

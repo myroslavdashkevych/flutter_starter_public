@@ -22,14 +22,14 @@ void main() {
     ).thenAnswer((_) async => Ok(testPage(1)));
   });
 
-  test('trims the query and passes the other arguments', () async {
+  test('ITM-2: trims the query and passes the other arguments', () async {
     await useCase(page: 2, query: '  rick ', forceRefresh: true);
 
     verify(() => repository.getPage(page: 2, query: 'rick', forceRefresh: true))
         .called(1);
   });
 
-  test('a blank query means no search', () async {
+  test('ITM-2: a blank query means no search', () async {
     await useCase(page: 1, query: '   ');
 
     verify(() => repository.getPage(page: 1)).called(1);

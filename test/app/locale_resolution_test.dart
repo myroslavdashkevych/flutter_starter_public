@@ -11,7 +11,7 @@ void main() {
     expect(supported.first, const Locale('en'));
   });
 
-  test('returns the first device locale with a supported language', () {
+  test('SET-3: returns the first device locale with a supported language', () {
     expect(
       resolveDeviceLocale(const [
         Locale('de'),
@@ -22,7 +22,7 @@ void main() {
     );
   });
 
-  test('falls back to English for unsupported languages', () {
+  test('SET-3: falls back to English for unsupported languages', () {
     expect(
       resolveDeviceLocale(const [Locale('de'), Locale('fr')], supported),
       const Locale('en'),

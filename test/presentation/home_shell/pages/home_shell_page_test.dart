@@ -23,7 +23,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('shows the child and the tabs in order', (tester) async {
+  testWidgets('NAV-2: shows the child and the tabs in order', (tester) async {
     await pumpPage(tester);
 
     expect(find.text('child'), findsOneWidget);

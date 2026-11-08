@@ -38,7 +38,7 @@ void main() {
     expect(page, testPageDto(ids: [1]));
   });
 
-  test('getCharacters leaves out an empty search', () async {
+  test('ITM-2: getCharacters leaves out an empty search', () async {
     setUpApi(testPageDto().toJson());
 
     await api.getCharacters(1, null);

@@ -28,7 +28,7 @@ void main() {
   });
 
   blocTest<ItemDetailsCubit, ItemDetailsState>(
-    'emits the loaded item',
+    'ITM-14: emits the loaded item',
     setUp: () {
       when(() => repository.getById(1))
           .thenAnswer((_) async => Ok(testItem(1)));
@@ -42,7 +42,7 @@ void main() {
   );
 
   blocTest<ItemDetailsCubit, ItemDetailsState>(
-    'emits the failure, and retry returns to loading',
+    'ITM-15: emits the failure, and retry returns to loading',
     setUp: () {
       when(() => repository.getById(1))
           .thenAnswer((_) async => const Err(Failure.network()));
@@ -62,7 +62,7 @@ void main() {
     ],
   );
 
-  group('open onLoaded', () {
+  group('NTF-1: open onLoaded', () {
     test('runs after the item is loaded', () async {
       when(() => repository.getById(1))
           .thenAnswer((_) async => Ok(testItem(1)));
@@ -106,27 +106,30 @@ void main() {
     });
   });
 
-  test('open logs select_content once; a retry does not log again', () async {
-    when(() => repository.getById(1))
-        .thenAnswer((_) async => const Err(Failure.network()));
-    final analytics = FakeAnalyticsService();
-    final cubit = ItemDetailsCubit(
-      GetItemDetailsUseCase(repository),
-      analytics,
-    );
-    addTearDown(cubit.close);
+  test(
+    'ITM-18: open logs select_content once; a retry does not log again',
+    () async {
+      when(() => repository.getById(1))
+          .thenAnswer((_) async => const Err(Failure.network()));
+      final analytics = FakeAnalyticsService();
+      final cubit = ItemDetailsCubit(
+        GetItemDetailsUseCase(repository),
+        analytics,
+      );
+      addTearDown(cubit.close);
 
-    await cubit.open(1);
-    await cubit.load(1);
+      await cubit.open(1);
+      await cubit.load(1);
 
-    expect(analytics.events, [
-      [
-        AnalyticsEvents.selectContent,
-        {
-          AnalyticsParams.contentType: AnalyticsValues.itemContentType,
-          AnalyticsParams.itemId: '1',
-        },
-      ],
-    ]);
-  });
+      expect(analytics.events, [
+        [
+          AnalyticsEvents.selectContent,
+          {
+            AnalyticsParams.contentType: AnalyticsValues.itemContentType,
+            AnalyticsParams.itemId: '1',
+          },
+        ],
+      ]);
+    },
+  );
 }

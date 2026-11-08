@@ -41,7 +41,7 @@ void main() {
     );
   });
 
-  test('adding logs add_to_wishlist', () async {
+  test('FAV-11: adding logs add_to_wishlist', () async {
     when(() => repository.toggle(testItem(1)))
         .thenAnswer((_) async => const Ok(true));
 
@@ -55,7 +55,7 @@ void main() {
     ]);
   });
 
-  test('removing logs remove_from_wishlist', () async {
+  test('FAV-11: removing logs remove_from_wishlist', () async {
     when(() => repository.toggle(testItem(1)))
         .thenAnswer((_) async => const Ok(false));
 
@@ -69,7 +69,7 @@ void main() {
     ]);
   });
 
-  test('a failure logs nothing', () async {
+  test('FAV-11: a failure logs nothing', () async {
     when(() => repository.toggle(testItem(1)))
         .thenAnswer((_) async => const Err(Failure.cache()));
 

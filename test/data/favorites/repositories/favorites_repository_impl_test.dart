@@ -95,7 +95,7 @@ void main() {
   });
 
   group('toggle', () {
-    test('adds the item, then removes it', () async {
+    test('FAV-1: adds the item, then removes it', () async {
       final repository = build();
 
       expect(
@@ -111,7 +111,7 @@ void main() {
       expect(await repository.watchAll().first, isEmpty);
     });
 
-    test('a guest cannot change favorites', () async {
+    test('FAV-2: a guest cannot change favorites', () async {
       currentUser = null;
       final repository = build();
 
@@ -121,7 +121,7 @@ void main() {
       expect(await repository.watchAll().first, isEmpty);
     });
 
-    test('notifies the streams', () async {
+    test('FAV-3: notifies the streams', () async {
       final repository = build();
       final isFavorite = <bool>[];
       final subscription = repository.watchIsFavorite(1).listen(isFavorite.add);
@@ -138,7 +138,7 @@ void main() {
   });
 
   group('storage', () {
-    test('survives a restart, newest first', () async {
+    test('FAV-5, FAV-7: survives a restart, newest first', () async {
       final repository = build();
       await repository.toggle(testItem(1));
       await Future<void>.delayed(const Duration(milliseconds: 2));
@@ -179,7 +179,7 @@ void main() {
       expect((stored['data'] as Map<String, dynamic>)['name'], 'Item 1');
     });
 
-    test('a record with another schema is skipped and kept', () async {
+    test('FAV-8: a record with another schema is skipped and kept', () async {
       final box = await openBox(alice.id);
       await box.put('1', envelope(99, testItem(1)));
       await box.put('2', envelope(1, testItem(2)));
@@ -188,7 +188,7 @@ void main() {
       expect(await box.get('1'), envelope(99, testItem(1)));
     });
 
-    test('a corrupt record is skipped, kept and logged', () async {
+    test('FAV-8: a corrupt record is skipped, kept and logged', () async {
       final box = await openBox(alice.id);
       await box.put('1', 'not json');
       await box.put('2', envelope(1, testItem(2)));
@@ -198,7 +198,7 @@ void main() {
       expect(talker.history, isNotEmpty);
     });
 
-    test('toggling a skipped record overwrites it', () async {
+    test('FAV-8: toggling a skipped record overwrites it', () async {
       final box = await openBox(alice.id);
       await box.put('1', 'not json');
       final repository = build();
@@ -211,7 +211,7 @@ void main() {
   });
 
   group('users', () {
-    test('every user has a separate box', () async {
+    test('FAV-16: every user has a separate box', () async {
       final repository = build();
       await repository.toggle(testItem(1));
 
@@ -245,37 +245,43 @@ void main() {
       expect(Hive.isBoxOpen(FavoritesLocalDataSource.boxName(bob.id)), isTrue);
     });
 
-    test('a user change hides the previous favorites at once', () async {
-      final repository = build();
-      await repository.toggle(testItem(1));
-      final emitted = <List<Item>>[];
-      final subscription = repository.watchAll().listen(emitted.add);
-      addTearDown(subscription.cancel);
-      await Future<void>.delayed(Duration.zero);
+    test(
+      'FAV-16: a user change hides the previous favorites at once',
+      () async {
+        final repository = build();
+        await repository.toggle(testItem(1));
+        final emitted = <List<Item>>[];
+        final subscription = repository.watchAll().listen(emitted.add);
+        addTearDown(subscription.cancel);
+        await Future<void>.delayed(Duration.zero);
 
-      await switchUser(repository, bob);
+        await switchUser(repository, bob);
 
-      expect(emitted, [
-        [testItem(1)],
-        isEmpty,
-        isEmpty,
-      ]);
-    });
+        expect(emitted, [
+          [testItem(1)],
+          isEmpty,
+          isEmpty,
+        ]);
+      },
+    );
 
-    test('signing out leaves an empty state and closes the box', () async {
-      final repository = build();
-      await repository.toggle(testItem(1));
+    test(
+      'FAV-16: signing out leaves an empty state and closes the box',
+      () async {
+        final repository = build();
+        await repository.toggle(testItem(1));
 
-      await switchUser(repository, null);
+        await switchUser(repository, null);
 
-      expect(await favoriteIds(repository), isEmpty);
-      expect(
-        Hive.isBoxOpen(FavoritesLocalDataSource.boxName(alice.id)),
-        isFalse,
-      );
-    });
+        expect(await favoriteIds(repository), isEmpty);
+        expect(
+          Hive.isBoxOpen(FavoritesLocalDataSource.boxName(alice.id)),
+          isFalse,
+        );
+      },
+    );
 
-    test('signing in again restores the favorites', () async {
+    test('FAV-16: signing in again restores the favorites', () async {
       final repository = build();
       await repository.toggle(testItem(1));
       await switchUser(repository, null);
@@ -290,7 +296,7 @@ void main() {
     Future<bool> boxExists(String uid) =>
         Hive.boxExists(FavoritesLocalDataSource.boxName(uid));
 
-    test('deletes the box of the current user', () async {
+    test('PRF-6: deletes the box of the current user', () async {
       final repository = build();
       await repository.toggle(testItem(1));
 
@@ -357,16 +363,19 @@ void main() {
       when(() => dataSource.closeBox(any())).thenAnswer((_) async {});
     });
 
-    test('a box that cannot open gives an empty list and is logged', () async {
-      when(() => dataSource.readAll(alice.id)).thenThrow(Exception('locked'));
+    test(
+      'FAV-9: a box that cannot open gives an empty list and is logged',
+      () async {
+        when(() => dataSource.readAll(alice.id)).thenThrow(Exception('locked'));
 
-      final items = await build(dataSource).watchAll().first;
+        final items = await build(dataSource).watchAll().first;
 
-      expect(items, isEmpty);
-      expect(talker.history, isNotEmpty);
-    });
+        expect(items, isEmpty);
+        expect(talker.history, isNotEmpty);
+      },
+    );
 
-    test('toggle returns a cache failure', () async {
+    test('FAV-9: toggle returns a cache failure', () async {
       when(() => dataSource.readAll(alice.id)).thenAnswer((_) async => []);
       when(() => dataSource.write(alice.id, any()))
           .thenThrow(Exception('disk full'));
@@ -385,21 +394,24 @@ void main() {
       expect(await repository.watchAll().first, isEmpty);
     });
 
-    test('toggle reads the box again after a failed first read', () async {
-      var attempts = 0;
-      when(() => dataSource.readAll(alice.id)).thenAnswer((_) async {
-        if (attempts++ == 0) throw Exception('locked');
-        return [];
-      });
-      when(() => dataSource.write(alice.id, any())).thenAnswer((_) async {});
-      final repository = build(dataSource);
-      await repository.watchAll().first;
+    test(
+      'FAV-9: toggle reads the box again after a failed first read',
+      () async {
+        var attempts = 0;
+        when(() => dataSource.readAll(alice.id)).thenAnswer((_) async {
+          if (attempts++ == 0) throw Exception('locked');
+          return [];
+        });
+        when(() => dataSource.write(alice.id, any())).thenAnswer((_) async {});
+        final repository = build(dataSource);
+        await repository.watchAll().first;
 
-      final result = await repository.toggle(testItem(1));
+        final result = await repository.toggle(testItem(1));
 
-      expect(result, isA<Ok<bool>>());
-      expect(attempts, 2);
-    });
+        expect(result, isA<Ok<bool>>());
+        expect(attempts, 2);
+      },
+    );
 
     test('clearForUser returns a cache failure and logs it', () async {
       when(() => dataSource.readAll(alice.id)).thenAnswer((_) async => []);

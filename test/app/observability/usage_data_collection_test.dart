@@ -47,15 +47,18 @@ void main() {
     await cubit.load();
   }
 
-  test('on start, collects when the rule and the setting allow it', () async {
-    await loadSetting(sharing: true);
+  test(
+    'SET-7: on start, collects when the rule and the setting allow it',
+    () async {
+      await loadSetting(sharing: true);
 
-    await sync(collectionAllowed: true);
+      await sync(collectionAllowed: true);
 
-    expectCollection(enabled: true);
-  });
+      expectCollection(enabled: true);
+    },
+  );
 
-  test('on start, a setting turned off stops collection', () async {
+  test('SET-7: on start, a setting turned off stops collection', () async {
     await loadSetting(sharing: false);
 
     await sync(collectionAllowed: true);
@@ -63,7 +66,7 @@ void main() {
     expectCollection(enabled: false);
   });
 
-  test('the rule wins over a setting turned on', () async {
+  test('SET-7: the rule wins over a setting turned on', () async {
     await loadSetting(sharing: true);
 
     await sync(collectionAllowed: false);
@@ -71,7 +74,7 @@ void main() {
     expectCollection(enabled: false);
   });
 
-  test('a change applies right away, in both directions', () async {
+  test('SET-7: a change applies right away, in both directions', () async {
     await loadSetting(sharing: true);
     await sync(collectionAllowed: true);
 
@@ -84,7 +87,7 @@ void main() {
     expectCollection(enabled: true);
   });
 
-  test('turning the setting on does not override the rule', () async {
+  test('SET-7: turning the setting on does not override the rule', () async {
     await loadSetting(sharing: false);
     await sync(collectionAllowed: false);
 

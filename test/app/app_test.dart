@@ -115,13 +115,13 @@ void main() {
       tester.widget(find.byType(MaterialApp));
 
   group('device language', () {
-    testWidgets('a supported language is used', (tester) async {
+    testWidgets('SET-3: a supported language is used', (tester) async {
       await pumpApp(tester, deviceLocales: const [Locale('uk', 'UA')]);
 
       expect(find.text("Пошук за ім'ям"), findsOneWidget);
     });
 
-    testWidgets('an unsupported language falls back to English', (
+    testWidgets('SET-3: an unsupported language falls back to English', (
       tester,
     ) async {
       await pumpApp(tester, deviceLocales: const [Locale('de')]);
@@ -130,8 +130,26 @@ void main() {
     });
   });
 
+  testWidgets('SET-4: the first frame uses the saved theme and language', (
+    tester,
+  ) async {
+    when(() => repository.load()).thenAnswer(
+      (_) async => const AppSettings(
+        themePreference: ThemePreference.dark,
+        localePreference: LocalePreference.uk,
+      ),
+    );
+    await cubit.load();
+
+    await tester.pumpWidget(App(router: router, settingsCubit: cubit));
+
+    expect(materialApp(tester).themeMode, ThemeMode.dark);
+    expect(materialApp(tester).locale, const Locale('uk'));
+    await tester.pumpAndSettle();
+  });
+
   group('settings page', () {
-    testWidgets('shows the app version', (tester) async {
+    testWidgets('SET-10: shows the app version', (tester) async {
       await pumpApp(tester);
       await openSettings(tester);
 
@@ -140,25 +158,26 @@ void main() {
       expect(find.text('1.2.3 (4)'), findsOneWidget);
     });
 
-    testWidgets('theme follows the system by default and switches live', (
-      tester,
-    ) async {
-      await pumpApp(tester);
-      await openSettings(tester);
-      expect(materialApp(tester).themeMode, ThemeMode.system);
+    testWidgets(
+      'SET-1: theme follows the system by default and switches live',
+      (tester) async {
+        await pumpApp(tester);
+        await openSettings(tester);
+        expect(materialApp(tester).themeMode, ThemeMode.system);
 
-      await tester.tap(find.text('Dark'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Dark'));
+        await tester.pumpAndSettle();
 
-      expect(materialApp(tester).themeMode, ThemeMode.dark);
-      verify(
-        () => repository.save(
-          const AppSettings(themePreference: ThemePreference.dark),
-        ),
-      ).called(1);
-    });
+        expect(materialApp(tester).themeMode, ThemeMode.dark);
+        verify(
+          () => repository.save(
+            const AppSettings(themePreference: ThemePreference.dark),
+          ),
+        ).called(1);
+      },
+    );
 
-    testWidgets('language switches live and back to the system', (
+    testWidgets('SET-2: language switches live and back to the system', (
       tester,
     ) async {
       await pumpApp(tester);
@@ -177,7 +196,7 @@ void main() {
       expect(find.text('Settings'), findsWidgets);
     });
 
-    testWidgets('a failed save shows a message and keeps the value', (
+    testWidgets('SET-5: a failed save shows a message and keeps the value', (
       tester,
     ) async {
       when(() => repository.save(any()))

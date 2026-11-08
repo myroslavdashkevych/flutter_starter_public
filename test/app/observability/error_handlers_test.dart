@@ -34,7 +34,7 @@ void main() {
     debugPrint = previousDebugPrint;
   });
 
-  test('a Flutter error is reported once as fatal and logged', () {
+  test('OBS-1: a Flutter error is reported once as fatal and logged', () {
     final error = StateError('boom');
 
     FlutterError.onError!(
@@ -47,7 +47,7 @@ void main() {
     expect(talker.history, hasLength(1));
   });
 
-  test('an uncaught error is reported once as fatal and handled', () {
+  test('OBS-1: an uncaught error is reported once as fatal and handled', () {
     final error = StateError('boom');
 
     final handled = PlatformDispatcher.instance.onError!(

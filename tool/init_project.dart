@@ -1,4 +1,4 @@
-// Turns a fresh copy of the starter into a new project (docs/new-project.md).
+// Turns a fresh copy of the starter into a new project (docs/guides/new-project.md).
 //
 // Usage: fvm dart run tool/init_project.dart --name "My App" --package my_app \
 //   --org com.example --firebase-prefix my-app-demo [--dry-run]
@@ -259,7 +259,7 @@ List<FileChange> planChanges({
     '.firebaserc': renameFirebaseIds,
     'config/dev.json': renameFirebaseIds,
     'config/prod.json': renameFirebaseIds,
-    'docs/setup.md': renameSetupDoc,
+    'docs/guides/setup.md': renameSetupDoc,
   };
 
   final changes = <FileChange>[];
@@ -360,7 +360,7 @@ String checklist(ProjectIds ids) =>
     '''
 Next steps
 
-1. Create two Firebase projects with these IDs (docs/setup.md section 5.1):
+1. Create two Firebase projects with these IDs (docs/guides/setup.md, Firebase):
    dev:  ${ids.firebaseDev}
    prod: ${ids.firebaseProd}
 
@@ -379,7 +379,8 @@ fvm dart run tool/check_imports.dart
 fvm flutter test
 fvm flutter run --flavor dev --dart-define-from-file=config/dev.json
 
-4. Replace what this script leaves alone (docs/new-project.md section 4):
+4. Replace what this script leaves alone (docs/guides/new-project.md,
+   "Replace the starter's content", including the spec):
    - launcher icons: assets/icons, then `fvm dart run flutter_launcher_icons`;
    - splash logo and colors, then `fvm dart run flutter_native_splash:create`;
    - hosting pages: hosting/*.html, including the app name and the privacy policy;
@@ -387,9 +388,9 @@ fvm flutter run --flavor dev --dart-define-from-file=config/dev.json
    - README.md and CLAUDE.md: the project name and description.
 
 5. Remove the demo blocks and the optional blocks you do not need
-   (docs/new-project.md section 5).
+   (docs/guides/new-project.md, "Demo and optional blocks").
 
-6. Before submitting to the stores, follow docs/store-release.md.''';
+6. Before submitting to the stores, follow docs/guides/store-release.md.''';
 
 List<String> _git(List<String> args) {
   final result = Process.runSync('git', args);

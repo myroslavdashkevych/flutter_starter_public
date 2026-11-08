@@ -64,7 +64,7 @@ void main() {
     );
 
     blocTest<ItemsListBloc, ItemsListState>(
-      'emits the failure, and retry loads again',
+      'ITM-7: emits the failure, and retry loads again',
       setUp: () => stubPage(1, () async => const Err(failure)),
       build: build,
       act: (bloc) async {
@@ -86,7 +86,7 @@ void main() {
     );
 
     blocTest<ItemsListBloc, ItemsListState>(
-      'an empty result is a loaded state without items',
+      'ITM-6: an empty result is a loaded state without items',
       setUp: () =>
           stubPage(1, () async => Ok(testPage(1, ids: [], hasMore: false))),
       build: build,
@@ -104,7 +104,7 @@ void main() {
 
   group('search', () {
     blocTest<ItemsListBloc, ItemsListState>(
-      'debounces typing and restarts pagination with the last query',
+      'ITM-2: debounces typing and restarts pagination with the last query',
       setUp: () => stubPage(
         1,
         () async => Ok(testPage(1, ids: [3], hasMore: false)),
@@ -136,7 +136,7 @@ void main() {
     );
 
     blocTest<ItemsListBloc, ItemsListState>(
-      'an unchanged query does nothing',
+      'ITM-2: an unchanged query does nothing',
       build: build,
       seed: () => loaded.copyWith(query: 'rick'),
       act: (bloc) => bloc.add(const ItemsListSearchChanged('rick')),
@@ -144,7 +144,7 @@ void main() {
       expect: () => const <ItemsListState>[],
     );
 
-    test('a slower earlier search cannot replace a newer one', () async {
+    test('ITM-5: a slower earlier search cannot replace a newer one', () async {
       final slow = Completer<Result<Paginated<Item>>>();
       stubPage(1, () => slow.future, query: 'a');
       stubPage(1, () async => Ok(testPage(1, ids: [9])), query: 'b');
@@ -181,32 +181,38 @@ void main() {
       await Future<void>.delayed(afterDebounce);
     }
 
-    test('logs only the term that remains after the debounce', () async {
-      bloc
-        ..add(const ItemsListSearchChanged('r'))
-        ..add(const ItemsListSearchChanged('ri'));
-      await search('rick');
+    test(
+      'ITM-17: logs only the term that remains after the debounce',
+      () async {
+        bloc
+          ..add(const ItemsListSearchChanged('r'))
+          ..add(const ItemsListSearchChanged('ri'));
+        await search('rick');
 
-      expect(analytics.events, [
-        [
-          AnalyticsEvents.search,
-          {AnalyticsParams.searchTerm: 'rick'},
-        ],
-      ]);
-    });
+        expect(analytics.events, [
+          [
+            AnalyticsEvents.search,
+            {AnalyticsParams.searchTerm: 'rick'},
+          ],
+        ]);
+      },
+    );
 
-    test('clearing the field or repeating the term logs nothing', () async {
-      await search('rick');
-      await search('rick');
-      await search('');
+    test(
+      'ITM-17: clearing the field or repeating the term logs nothing',
+      () async {
+        await search('rick');
+        await search('rick');
+        await search('');
 
-      expect(analytics.events, hasLength(1));
-    });
+        expect(analytics.events, hasLength(1));
+      },
+    );
   });
 
   group('next page', () {
     blocTest<ItemsListBloc, ItemsListState>(
-      'appends the next page',
+      'ITM-3: appends the next page',
       setUp: () =>
           stubPage(2, () async => Ok(testPage(2, ids: [3], hasMore: false))),
       build: build,
@@ -223,7 +229,7 @@ void main() {
     );
 
     blocTest<ItemsListBloc, ItemsListState>(
-      'a failure keeps the list, and retry clears it',
+      'ITM-7: a failure keeps the list, and retry clears it',
       setUp: () => stubPage(2, () async => const Err(failure)),
       build: build,
       seed: () => loaded,
@@ -244,7 +250,7 @@ void main() {
       ],
     );
 
-    test('a request while one is running is ignored', () async {
+    test('ITM-3: a request while one is running is ignored', () async {
       final slow = Completer<Result<Paginated<Item>>>();
       stubPage(2, () => slow.future);
       final bloc = build()..emit(loaded);
@@ -260,14 +266,14 @@ void main() {
     });
 
     blocTest<ItemsListBloc, ItemsListState>(
-      'does nothing on the last page',
+      'ITM-3: does nothing on the last page',
       build: build,
       seed: () => loaded.copyWith(hasMore: false),
       act: (bloc) => bloc.add(const ItemsListNextPageRequested()),
       expect: () => const <ItemsListState>[],
     );
 
-    test('a result arriving after a new search is dropped', () async {
+    test('ITM-5: a result arriving after a new search is dropped', () async {
       final slow = Completer<Result<Paginated<Item>>>();
       stubPage(2, () => slow.future);
       stubPage(1, () async => Ok(testPage(1, ids: [9])), query: 'rick');
@@ -287,7 +293,7 @@ void main() {
       expect(bloc.state.isLoadingMore, isFalse);
     });
 
-    test('a failure arriving after a refresh is dropped', () async {
+    test('ITM-5: a failure arriving after a refresh is dropped', () async {
       final slow = Completer<Result<Paginated<Item>>>();
       stubPage(2, () => slow.future);
       stubPage(1, () async => Ok(testPage(1, ids: [7])), forceRefresh: true);
@@ -310,7 +316,7 @@ void main() {
 
   group('refresh', () {
     blocTest<ItemsListBloc, ItemsListState>(
-      'forces page 1 and replaces the list',
+      'ITM-4: forces page 1 and replaces the list',
       setUp: () => stubPage(
         1,
         () async => Ok(testPage(1, ids: [7])),
@@ -326,7 +332,7 @@ void main() {
     );
 
     blocTest<ItemsListBloc, ItemsListState>(
-      'a failure keeps the list and is reported once',
+      'ITM-19: a failure keeps the list and is reported once',
       setUp: () =>
           stubPage(1, () async => const Err(failure), forceRefresh: true),
       build: build,
@@ -351,7 +357,7 @@ void main() {
       expect: () => const <ItemsListState>[],
     );
 
-    test('a result arriving after a new search is dropped', () async {
+    test('ITM-5: a result arriving after a new search is dropped', () async {
       final slow = Completer<Result<Paginated<Item>>>();
       stubPage(1, () => slow.future, forceRefresh: true);
       stubPage(1, () async => Ok(testPage(1, ids: [9])), query: 'rick');

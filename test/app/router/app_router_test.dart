@@ -125,7 +125,7 @@ void main() {
 
   String location() => router.routerDelegate.currentConfiguration.uri.path;
 
-  testWidgets('starts on the items tab', (tester) async {
+  testWidgets('NAV-1: starts on the items tab', (tester) async {
     await pumpApp(tester);
 
     expect(location(), '/items');
@@ -134,7 +134,7 @@ void main() {
 
   // FCM copies `data.route` to the launch intent, and FlutterActivity reads the
   // `route` extra as the platform default route.
-  testWidgets('ignores the platform default route', (tester) async {
+  testWidgets('NAV-1: ignores the platform default route', (tester) async {
     tester.platformDispatcher.defaultRouteNameTestValue = '/unknown';
     addTearDown(tester.platformDispatcher.clearDefaultRouteNameTestValue);
     router.dispose();
@@ -162,7 +162,9 @@ void main() {
     expect(location(), '/items');
   });
 
-  testWidgets('an item opens by its id inside the items tab', (tester) async {
+  testWidgets('ITM-1: an item opens by its id inside the items tab', (
+    tester,
+  ) async {
     await pumpApp(tester);
 
     await openFirstItem(tester);
@@ -182,8 +184,8 @@ void main() {
         ..registerFactory(() => RequestNotificationPermissionUseCase(notAsked));
     });
 
-    testWidgets('the first opened item asks; "Not now" keeps the system '
-        'request', (tester) async {
+    testWidgets('NTF-1, NTF-2, NTF-3: the first opened item asks; "Not now" '
+        'keeps the system request', (tester) async {
       await pumpApp(tester);
       analytics.screens.clear();
 
@@ -201,7 +203,7 @@ void main() {
       expect(analytics.screens, ['item_details']);
     });
 
-    testWidgets('"Allow" leads to the system request', (tester) async {
+    testWidgets('NTF-2: "Allow" leads to the system request', (tester) async {
       await pumpApp(tester);
       await openFirstItem(tester);
 
@@ -211,7 +213,9 @@ void main() {
       expect(notAsked.permissionRequests, 1);
     });
 
-    testWidgets('the next opened item does not ask again', (tester) async {
+    testWidgets('NTF-2: the next opened item does not ask again', (
+      tester,
+    ) async {
       await pumpApp(tester);
       await openFirstItem(tester);
       await tester.tap(find.text('Not now'));
@@ -225,7 +229,7 @@ void main() {
     });
   });
 
-  testWidgets('a tab keeps its own stack', (tester) async {
+  testWidgets('NAV-3: a tab keeps its own stack', (tester) async {
     await pumpApp(tester);
     await openFirstItem(tester);
 
@@ -282,7 +286,7 @@ void main() {
     expect(location(), '/items/1');
   });
 
-  group('screen views', () {
+  group('OBS-3: screen views', () {
     testWidgets('the first screen is reported once by its name', (
       tester,
     ) async {
@@ -356,45 +360,49 @@ void main() {
   });
 
   group('logs', () {
-    testWidgets('dev shows the entry and opens the logs', (tester) async {
-      await pumpApp(tester);
-      await tapTab(tester, 'Settings');
+    testWidgets(
+      'NAV-7, OBS-6, SET-11: dev shows the entry and opens the logs',
+      (tester) async {
+        await pumpApp(tester);
+        await tapTab(tester, 'Settings');
 
-      await tester.scrollUntilVisible(find.text('Logs'), 100);
-      await tester.tap(find.text('Logs'));
-      await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(find.text('Logs'), 100);
+        await tester.tap(find.text('Logs'));
+        await tester.pumpAndSettle();
 
-      expect(location(), '/settings/logs');
-      expect(analytics.screens.last, 'logs');
-    });
+        expect(location(), '/settings/logs');
+        expect(analytics.screens.last, 'logs');
+      },
+    );
 
-    testWidgets('prod hides the entries and redirects the route', (
-      tester,
-    ) async {
-      getIt
-        ..unregister<AppConfig>()
-        ..registerSingleton(
-          const AppConfig(
-            flavor: Flavor.prod,
-            itemsApiBaseUrl: 'https://items.invalid',
-            backendBaseUrl: 'https://backend.invalid',
-            itemsCacheTtlMinutes: 30,
-            privacyPolicyUrl: 'https://privacy.invalid',
-            usageDataSharingDefault: true,
-          ),
-        );
-      await pumpApp(tester);
-      await tapTab(tester, 'Settings');
+    testWidgets(
+      'NAV-7, SET-11: prod hides the entries and redirects the route',
+      (tester) async {
+        getIt
+          ..unregister<AppConfig>()
+          ..registerSingleton(
+            const AppConfig(
+              flavor: Flavor.prod,
+              itemsApiBaseUrl: 'https://items.invalid',
+              backendBaseUrl: 'https://backend.invalid',
+              itemsCacheTtlMinutes: 30,
+              privacyPolicyUrl: 'https://privacy.invalid',
+              usageDataSharingDefault: true,
+            ),
+          );
+        await pumpApp(tester);
+        await tapTab(tester, 'Settings');
 
-      await tester.scrollUntilVisible(find.text('1.2.3 (4)'), 100);
-      await tester.pumpAndSettle();
-      expect(find.text('Logs'), findsNothing);
-      expect(find.text('Test crash'), findsNothing);
+        await tester.scrollUntilVisible(find.text('1.2.3 (4)'), 100);
+        await tester.pumpAndSettle();
+        expect(find.text('Logs'), findsNothing);
+        expect(find.text('Test crash'), findsNothing);
 
-      router.go('/settings/logs');
-      await tester.pumpAndSettle();
+        router.go('/settings/logs');
+        await tester.pumpAndSettle();
 
-      expect(location(), '/settings');
-    });
+        expect(location(), '/settings');
+      },
+    );
   });
 }

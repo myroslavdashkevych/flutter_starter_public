@@ -38,7 +38,7 @@ void main() {
     });
   });
 
-  test('every auth failure reason has a test case', () {
+  test('AUTH-5: every auth failure reason has a test case', () {
     for (final reason in AuthFailureReason.values) {
       expect(expectedEn, contains(Failure.auth(reason)));
     }

@@ -404,7 +404,7 @@ void main() {
         'lib/data/items/repositories/items_repository_impl.dart',
         'lib/domain/items/usecases/get_items_page_use_case.dart',
         'lib/presentation/items_list/bloc/items_list_bloc.dart',
-        'lib/presentation/_shared/favorites/favorite_toggle_cubit.dart',
+        'lib/presentation/_shared/bloc/favorite/favorite_toggle_cubit.dart',
         'lib/data/items/models/character_dto.g.dart',
       ]) {
         expect(checkLocation(path), isNull, reason: path);
@@ -518,6 +518,18 @@ final helper = GetItHelper(container);
     test('returns 0 for a project without violations', () {
       writeFile('lib/main.dart', "import '$_own/app/app.dart';\n");
       writeFile('lib/app/app.dart', "import '$_own/data/items/a.dart';\n");
+      final out = StringBuffer();
+
+      expect(run(root, out), 0);
+      expect(out.toString(), contains('No import violations.'));
+    });
+
+    test('never opens a never-read file', () {
+      writeFile('lib/main.dart', "import '$_own/app/app.dart';\n");
+      // Not valid UTF-8: reading it as a string would throw.
+      File('${root.path}/lib/app/firebase/firebase_options_dev.dart')
+        ..createSync(recursive: true)
+        ..writeAsBytesSync([0xff, 0xfe, 0xfd]);
       final out = StringBuffer();
 
       expect(run(root, out), 0);

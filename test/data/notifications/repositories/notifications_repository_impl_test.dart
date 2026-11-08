@@ -73,7 +73,7 @@ void main() {
       await subscription.cancel();
     });
 
-    test('emits the FCM message that launched the app', () async {
+    test('NTF-6: emits the FCM message that launched the app', () async {
       when(fcm.initialMessage).thenAnswer(
         (_) async => const RemoteMessage(data: {'route': '/items/1'}),
       );
@@ -109,27 +109,30 @@ void main() {
     });
   });
 
-  test('showForeground passes the message to the local data source', () async {
-    when(
-      () => localNotifications.show(
-        title: any(named: 'title'),
-        body: any(named: 'body'),
-        route: any(named: 'route'),
-      ),
-    ).thenAnswer((_) async {});
+  test(
+    'NTF-4: showForeground passes the message to the local data source',
+    () async {
+      when(
+        () => localNotifications.show(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          route: any(named: 'route'),
+        ),
+      ).thenAnswer((_) async {});
 
-    final result = await repository.showForeground(
-      const NotificationMessage(title: 'T', body: 'B', route: '/items/1'),
-    );
+      final result = await repository.showForeground(
+        const NotificationMessage(title: 'T', body: 'B', route: '/items/1'),
+      );
 
-    expect(result, isA<Ok<void>>());
-    verify(
-      () => localNotifications.show(title: 'T', body: 'B', route: '/items/1'),
-    ).called(1);
-  });
+      expect(result, isA<Ok<void>>());
+      verify(
+        () => localNotifications.show(title: 'T', body: 'B', route: '/items/1'),
+      ).called(1);
+    },
+  );
 
   group('failures become Err', () {
-    test('register, as a warning that is not a crash report', () async {
+    test('NTF-5: register, as a warning that is not a crash report', () async {
       when(fcm.register).thenThrow(Exception('no network'));
 
       expect(await repository.register(), _isErr(const Failure.unexpected()));

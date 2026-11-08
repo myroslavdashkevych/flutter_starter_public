@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_starter/domain/items/entities/item.dart';
 import 'package:flutter_starter/presentation/_shared/l10n/failure_messages.dart';
 import 'package:flutter_starter/presentation/_shared/l10n/l10n_extension.dart';
-import 'package:flutter_starter/domain/items/entities/item.dart';
-import 'package:flutter_starter/presentation/_shared/widgets/failure_view.dart';
-import 'package:flutter_starter/presentation/_shared/widgets/item_tile.dart';
+import 'package:flutter_starter/presentation/_shared/widgets/item/item_tile.dart';
+import 'package:flutter_starter/presentation/_shared/widgets/state/failure_view.dart';
 import 'package:flutter_starter/presentation/items_list/bloc/items_list_bloc.dart';
 import 'package:flutter_starter/presentation/items_list/bloc/items_list_event.dart';
 import 'package:flutter_starter/presentation/items_list/bloc/items_list_state.dart';

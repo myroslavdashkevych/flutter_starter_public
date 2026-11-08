@@ -1,7 +1,7 @@
 import 'package:flutter_starter/app/router/routes.dart';
 import 'package:flutter_starter/presentation/auth/bloc/auth_state.dart';
 
-/// The redirect rule from `docs/features.md` section 1.
+/// The redirect rule NAV-5 from `docs/spec/features/navigation.md`.
 String? authRedirect(AuthState auth, Uri uri) {
   final isAuthPage =
       uri.path == const SignInRoute().location ||

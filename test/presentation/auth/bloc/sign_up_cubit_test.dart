@@ -22,7 +22,7 @@ void main() {
   setUp(() => repository = MockAuthRepository());
 
   blocTest<SignUpCubit, SignUpState>(
-    'a different confirmation is rejected',
+    'AUTH-3: a different confirmation is rejected',
     build: () => SignUpCubit(repository, FakeAnalyticsService()),
     act: (cubit) =>
         cubit.submit(email: email, password: password, confirmation: 'secret2'),
@@ -38,7 +38,7 @@ void main() {
   );
 
   blocTest<SignUpCubit, SignUpState>(
-    'an empty email and a short password are rejected',
+    'AUTH-1, AUTH-2: an empty email and a short password are rejected',
     build: () => SignUpCubit(repository, FakeAnalyticsService()),
     act: (cubit) =>
         cubit.submit(email: '', password: '123', confirmation: '123'),
@@ -51,7 +51,7 @@ void main() {
   );
 
   blocTest<SignUpCubit, SignUpState>(
-    'success goes through submitting',
+    'AUTH-4: success goes through submitting',
     setUp: () {
       when(() => repository.signUp(email: email, password: password))
           .thenAnswer((_) async => const Ok(testUser));
@@ -66,7 +66,7 @@ void main() {
   );
 
   blocTest<SignUpCubit, SignUpState>(
-    'a failure is shown',
+    'AUTH-5: a failure is shown',
     setUp: () {
       when(() => repository.signUp(email: email, password: password))
           .thenAnswer((_) async => const Err(failure));
@@ -80,7 +80,7 @@ void main() {
     ],
   );
 
-  group('analytics', () {
+  group('AUTH-8: analytics', () {
     late FakeAnalyticsService analytics;
 
     setUp(() => analytics = FakeAnalyticsService());

@@ -80,7 +80,9 @@ void main() {
     expect(order, [...order]..sort());
   });
 
-  testWidgets('hides the dev entries without their callbacks', (tester) async {
+  testWidgets('SET-11: hides the dev entries without their callbacks', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(2400, 9000);
     addTearDown(tester.view.reset);
     await pumpPage(tester);
@@ -89,7 +91,9 @@ void main() {
     expect(find.text('Test crash'), findsNothing);
   });
 
-  testWidgets('the switch shows the setting and changes it', (tester) async {
+  testWidgets('SET-6: the switch shows the setting and changes it', (
+    tester,
+  ) async {
     await pumpPage(tester);
     final tile = find.widgetWithText(SwitchListTile, 'Share usage data');
     await tester.scrollUntilVisible(tile, 100);
@@ -104,7 +108,9 @@ void main() {
     expect(tester.widget<SwitchListTile>(tile).value, isFalse);
   });
 
-  testWidgets('opens the privacy policy without a message', (tester) async {
+  testWidgets('SET-9: opens the privacy policy without a message', (
+    tester,
+  ) async {
     final opened = <Uri>[];
     await pumpPage(
       tester,
@@ -120,7 +126,7 @@ void main() {
     expect(find.text(failureMessage), findsNothing);
   });
 
-  testWidgets('copies the link from the message when opening fails', (
+  testWidgets('SET-9: copies the link from the message when opening fails', (
     tester,
   ) async {
     String? copied;

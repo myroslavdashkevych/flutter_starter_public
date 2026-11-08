@@ -62,7 +62,7 @@ void main() {
     expect(find.text('Details'), findsOneWidget);
   });
 
-  testWidgets('shows all the fields', (tester) async {
+  testWidgets('ITM-14: shows all the fields', (tester) async {
     tester.view.physicalSize = const Size(800, 2000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -79,7 +79,7 @@ void main() {
     expect(find.text('2'), findsOneWidget);
   });
 
-  testWidgets('shows the failure and retries', (tester) async {
+  testWidgets('ITM-15: shows the failure and retries', (tester) async {
     when(() => repository.getById(1))
         .thenAnswer((_) async => const Err(Failure.notFound()));
     await cubit.load(1);
@@ -97,7 +97,7 @@ void main() {
   group('opened from favorites', () {
     Widget action(BuildContext _) => const Text('Remove action');
 
-    testWidgets('a missing item shows the action instead of a retry', (
+    testWidgets('FAV-10: a missing item shows the action instead of a retry', (
       tester,
     ) async {
       when(() => repository.getById(1))
@@ -110,7 +110,7 @@ void main() {
       expect(find.text('Retry'), findsNothing);
     });
 
-    testWidgets('other failures keep the retry', (tester) async {
+    testWidgets('FAV-10: other failures keep the retry', (tester) async {
       when(() => repository.getById(1))
           .thenAnswer((_) async => const Err(Failure.network()));
       await cubit.load(1);
@@ -140,13 +140,15 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('is hidden from a guest', (tester) async {
+    testWidgets('FAV-2: is hidden from a guest', (tester) async {
       await pumpLoaded(tester, Stream.value(null));
 
       expect(toggle, findsNothing);
     });
 
-    testWidgets('is shown to a signed-in user and flips', (tester) async {
+    testWidgets('FAV-1: is shown to a signed-in user and flips', (
+      tester,
+    ) async {
       await pumpLoaded(tester, Stream.value(testUser));
 
       expect(find.byIcon(Icons.favorite_border), findsOneWidget);

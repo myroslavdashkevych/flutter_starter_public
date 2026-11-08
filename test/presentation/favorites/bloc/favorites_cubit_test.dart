@@ -44,7 +44,7 @@ void main() {
   });
 
   blocTest<FavoritesCubit, FavoritesState>(
-    'a user sees the items in the repository order',
+    'FAV-5: a user sees the items in the repository order',
     build: build,
     act: (_) => users.add(testUser),
     wait: Duration.zero,
@@ -55,7 +55,7 @@ void main() {
   );
 
   blocTest<FavoritesCubit, FavoritesState>(
-    'a guest gets the guest state',
+    'FAV-6: a guest gets the guest state',
     build: build,
     act: (_) => users.add(null),
     wait: Duration.zero,
@@ -65,7 +65,7 @@ void main() {
   );
 
   blocTest<FavoritesCubit, FavoritesState>(
-    'removing an item elsewhere updates the list',
+    'FAV-3: removing an item elsewhere updates the list',
     build: build,
     act: (_) async {
       await Future<void>.delayed(Duration.zero);
@@ -76,7 +76,7 @@ void main() {
   );
 
   blocTest<FavoritesCubit, FavoritesState>(
-    'remove takes the item out by its id',
+    'FAV-15: remove takes the item out by its id',
     build: build,
     act: (cubit) async {
       await Future<void>.delayed(Duration.zero);
@@ -87,7 +87,7 @@ void main() {
   );
 
   blocTest<FavoritesCubit, FavoritesState>(
-    'a failed remove keeps the item and reports the failure',
+    'FAV-4: a failed remove keeps the item and reports the failure',
     build: () {
       favorites.toggleFailure = const Failure.cache();
       return build();

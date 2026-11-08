@@ -16,7 +16,7 @@ void main() {
     );
   });
 
-  test('talker.handle reports an exception as non-fatal', () {
+  test('OBS-1: talker.handle reports an exception as non-fatal', () {
     final exception = Exception('boom');
 
     talker.handle(exception, StackTrace.current, 'While testing');

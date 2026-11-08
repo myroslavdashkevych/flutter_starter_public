@@ -24,7 +24,8 @@ BLoC · get_it + injectable · go_router + go_router_builder · dio + retrofit �
 freezed + json_serializable · hive_ce · shared_preferences · gen-l10n ·
 talker · FlutterFire · mocktail + bloc_test.
 
-Full list with versions and rationale: [docs/tech-stack.md](docs/tech-stack.md).
+Full list and compatibility notes: [docs/spec/tech-stack.md](docs/spec/tech-stack.md);
+rationale: [docs/decisions/](docs/decisions/).
 
 ## Requirements
 
@@ -44,7 +45,8 @@ fvm flutter run --flavor dev --dart-define-from-file=config/dev.json
 
 The repository ships without Firebase configs, so `flutter run` works only after you
 connect your own Firebase projects
-([docs/new-project.md section 3](docs/new-project.md#3-connect-your-own-firebase-projects)).
+([docs/guides/new-project.md](docs/guides/new-project.md#3-connect-your-own-firebase-projects),
+Connect your own Firebase projects).
 Analyze and the tests work without them.
 
 ## Project structure
@@ -60,26 +62,28 @@ lib/
   l10n/       # ARB files and generated localizations
 ```
 
-Details and import rules: [docs/architecture.md](docs/architecture.md).
+Details and import rules: [docs/spec/architecture.md](docs/spec/architecture.md).
 
 ## Starting a new project from this template
 
-Follow [docs/new-project.md](docs/new-project.md): create a repository from this template,
-rename it with `tool/init_project.dart`, connect your own Firebase projects, replace the
-starter's content, remove the demo blocks and any optional block you do not need
-([section 5](docs/new-project.md#5-demo-and-optional-blocks)), then release.
+Follow [docs/guides/new-project.md](docs/guides/new-project.md): create a repository from this
+template, rename it with `tool/init_project.dart`, connect your own Firebase projects, replace
+the starter's content and spec, remove the demo blocks and any optional block you do not need
+([Demo and optional blocks](docs/guides/new-project.md#5-demo-and-optional-blocks)), then release.
 
 ## Documentation
 
 | Document | Contents |
 |---|---|
 | [CLAUDE.md](CLAUDE.md) | Project rules for AI coding agents (with `.claude/settings.json`) |
-| [docs/architecture.md](docs/architecture.md) | Layers, folders, import rules, patterns |
-| [docs/tech-stack.md](docs/tech-stack.md) | Dependencies, compatibility, decisions |
-| [docs/features.md](docs/features.md) | Functional specification of the demo app |
-| [docs/setup.md](docs/setup.md) | FVM, flavors, Firebase, CI, security, splash, icons, hosting |
-| [docs/new-project.md](docs/new-project.md) | Turning a copy of the starter into a new app |
-| [docs/store-release.md](docs/store-release.md) | Submission checklist, store data declarations |
+| [docs/README.md](docs/README.md) | Documentation map and conventions: source of truth, requirement IDs, change process |
+| [docs/reading-rules.md](docs/reading-rules.md) | Reading rules for agents: what to read for which change |
+| [docs/spec/](docs/spec/) | Living specification: product, features, areas, architecture, tech stack |
+| [docs/decisions/](docs/decisions/) | Architecture decision records |
+| [docs/design/](docs/design/README.md) | Design conventions and approved screens |
+| [docs/guides/setup.md](docs/guides/setup.md) | FVM, flavors, Firebase, CI, security, splash, icons, hosting |
+| [docs/guides/new-project.md](docs/guides/new-project.md) | Turning a copy of the starter into a new app |
+| [docs/guides/store-release.md](docs/guides/store-release.md) | Submission checklist, store data declarations |
 
 ## Known limitations
 
@@ -88,7 +92,7 @@ starter's content, remove the demo blocks and any optional block you do not need
 - Google Sign-In and Sign in with Apple are intentionally not included yet.
 - A project created with `tool/init_project.dart` has not yet been built with configs from
   new Firebase projects; the first real project closes this check. What was verified:
-  [docs/new-project.md](docs/new-project.md#7-what-has-been-verified).
+  [docs/guides/new-project.md](docs/guides/new-project.md#7-what-has-been-verified).
 - The Android build warns that `firebase_analytics`, `firebase_auth`, `firebase_core` and
   `firebase_crashlytics` apply the Kotlin Gradle Plugin. Flutter says future versions will
   fail such builds, and `.fvmrc` tracks `stable`, so this can break without a repository

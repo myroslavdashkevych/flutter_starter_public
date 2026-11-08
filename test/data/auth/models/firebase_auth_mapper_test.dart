@@ -22,9 +22,23 @@ void main() {
   };
 
   expected.forEach((code, reason) {
-    test('$code maps to ${reason.name}', () {
+    test('AUTH-5: $code maps to ${reason.name}', () {
       expect(authFailureReasonFromCode(code), reason);
     });
+  });
+
+  test('AUTH-6: an unknown email and a wrong password give one reason', () {
+    for (final code in [
+      'invalid-credential',
+      'user-not-found',
+      'wrong-password',
+    ]) {
+      expect(
+        authFailureReasonFromCode(code),
+        AuthFailureReason.invalidCredentials,
+        reason: code,
+      );
+    }
   });
 
   test('a Firebase user maps to AppUser', () {

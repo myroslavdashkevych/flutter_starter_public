@@ -69,7 +69,7 @@ void main() {
   tearDown(() async => bloc?.close());
 
   group('favorite toggle', () {
-    testWidgets('is hidden from a guest', (tester) async {
+    testWidgets('FAV-2: is hidden from a guest', (tester) async {
       final authRepository = MockAuthRepository();
       when(authRepository.authStateChanges)
           .thenAnswer((_) => Stream<AppUser?>.value(null));
@@ -87,7 +87,7 @@ void main() {
       expect(find.byType(IconButton), findsNothing);
     });
 
-    testWidgets('shows a signed-in user the state of every item', (
+    testWidgets('FAV-1: shows a signed-in user the state of every item', (
       tester,
     ) async {
       await pumpPage(
@@ -130,7 +130,7 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 
-  testWidgets('shows the failure and retries', (tester) async {
+  testWidgets('ITM-7: shows the failure and retries', (tester) async {
     when(() => repository.getPage(page: 1))
         .thenAnswer((_) async => Ok(testPage(1)));
     await pumpPage(
@@ -151,7 +151,9 @@ void main() {
     verify(() => repository.getPage(page: 1)).called(1);
   });
 
-  testWidgets('tells an empty list from an empty search', (tester) async {
+  testWidgets('ITM-6: tells an empty list from an empty search', (
+    tester,
+  ) async {
     await pumpPage(
       tester,
       const ItemsListState(status: ItemsListStatus.loaded, generation: 1),
@@ -169,7 +171,9 @@ void main() {
     expect(find.text('Nothing matches your search.'), findsOneWidget);
   });
 
-  testWidgets('shows the items and reports the tapped one', (tester) async {
+  testWidgets('ITM-1: shows the items and reports the tapped one', (
+    tester,
+  ) async {
     await pumpPage(tester, loaded);
 
     expect(find.text('Human · Alive'), findsNWidgets(2));
@@ -178,14 +182,16 @@ void main() {
     expect(selected, [2]);
   });
 
-  testWidgets('shows the progress of loading more', (tester) async {
+  testWidgets('ITM-3: shows the progress of loading more', (tester) async {
     await pumpPage(tester, loaded.copyWith(isLoadingMore: true));
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     expect(find.text('Item 1'), findsOneWidget);
   });
 
-  testWidgets('shows an inline retry when loading more fails', (tester) async {
+  testWidgets('ITM-7: shows an inline retry when loading more fails', (
+    tester,
+  ) async {
     when(() => repository.getPage(page: 2))
         .thenAnswer((_) async => Ok(testPage(2, ids: [3], hasMore: false)));
     await pumpPage(
@@ -204,7 +210,7 @@ void main() {
     verify(() => repository.getPage(page: 2)).called(1);
   });
 
-  testWidgets('a refresh failure shows one snack bar', (tester) async {
+  testWidgets('ITM-19: a refresh failure shows one snack bar', (tester) async {
     await pumpPage(tester, loaded);
 
     bloc!.emit(loaded.copyWith(refreshFailure: const Failure.network()));
@@ -224,7 +230,9 @@ void main() {
     expect(find.byType(SnackBar), findsOneWidget);
   });
 
-  testWidgets('scrolling past 80% requests the next page', (tester) async {
+  testWidgets('ITM-3: scrolling past 80% requests the next page', (
+    tester,
+  ) async {
     when(() => repository.getPage(page: 2))
         .thenAnswer((_) async => Ok(testPage(2, ids: [99], hasMore: false)));
     await pumpPage(
@@ -241,7 +249,7 @@ void main() {
     verify(() => repository.getPage(page: 2)).called(1);
   });
 
-  testWidgets('typing sends a search event', (tester) async {
+  testWidgets('ITM-2: typing sends a search event', (tester) async {
     when(() => repository.getPage(page: 1, query: 'rick'))
         .thenAnswer((_) async => Ok(testPage(1, ids: [5], hasMore: false)));
     await pumpPage(tester, loaded);

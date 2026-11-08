@@ -24,39 +24,39 @@ void main() {
     useCase = DeleteAccountUseCase(repository, favoritesRepository, analytics);
   });
 
-  test(
-    're-authenticates first, then deletes the account and favorites',
-    () async {
-      when(() => repository.reauthenticate(password: 'secret1'))
-          .thenAnswer((_) async => const Ok(null));
-      when(repository.deleteAccount).thenAnswer((_) async => const Ok(null));
-
-      final result = await useCase(password: 'secret1');
-
-      expect(result, isA<Ok<void>>());
-      verifyInOrder([
-        () => repository.reauthenticate(password: 'secret1'),
-        repository.authStateChanges,
-        repository.deleteAccount,
-        () => favoritesRepository.clearForUser(testUser.id),
-      ]);
-    },
-  );
-
-  test('a failure to clear the favorites does not fail the deletion', () async {
+  test('PRF-5, PRF-6: re-authenticates first, then deletes the account and favorites', () async {
     when(() => repository.reauthenticate(password: 'secret1'))
         .thenAnswer((_) async => const Ok(null));
     when(repository.deleteAccount).thenAnswer((_) async => const Ok(null));
-    when(() => favoritesRepository.clearForUser(testUser.id))
-        .thenAnswer((_) async => const Err(Failure.cache()));
 
     final result = await useCase(password: 'secret1');
 
     expect(result, isA<Ok<void>>());
-    verify(() => favoritesRepository.clearForUser(testUser.id)).called(1);
+    verifyInOrder([
+      () => repository.reauthenticate(password: 'secret1'),
+      repository.authStateChanges,
+      repository.deleteAccount,
+      () => favoritesRepository.clearForUser(testUser.id),
+    ]);
   });
 
-  test('a wrong password stops before deletion', () async {
+  test(
+    'PRF-6: a failure to clear the favorites does not fail the deletion',
+    () async {
+      when(() => repository.reauthenticate(password: 'secret1'))
+          .thenAnswer((_) async => const Ok(null));
+      when(repository.deleteAccount).thenAnswer((_) async => const Ok(null));
+      when(() => favoritesRepository.clearForUser(testUser.id))
+          .thenAnswer((_) async => const Err(Failure.cache()));
+
+      final result = await useCase(password: 'secret1');
+
+      expect(result, isA<Ok<void>>());
+      verify(() => favoritesRepository.clearForUser(testUser.id)).called(1);
+    },
+  );
+
+  test('PRF-7: a wrong password stops before deletion', () async {
     const failure = Failure.auth(AuthFailureReason.invalidCredentials);
     when(() => repository.reauthenticate(password: 'wrong11'))
         .thenAnswer((_) async => const Err(failure));
@@ -71,22 +71,26 @@ void main() {
     verifyNever(() => favoritesRepository.clearForUser(any()));
   });
 
-  test('returns the failure of the deletion and keeps the favorites', () async {
-    const failure = Failure.auth(AuthFailureReason.network);
-    when(() => repository.reauthenticate(password: 'secret1'))
-        .thenAnswer((_) async => const Ok(null));
-    when(repository.deleteAccount).thenAnswer((_) async => const Err(failure));
+  test(
+    'PRF-7: returns the failure of the deletion and keeps the favorites',
+    () async {
+      const failure = Failure.auth(AuthFailureReason.network);
+      when(() => repository.reauthenticate(password: 'secret1'))
+          .thenAnswer((_) async => const Ok(null));
+      when(repository.deleteAccount)
+          .thenAnswer((_) async => const Err(failure));
 
-    final result = await useCase(password: 'secret1');
+      final result = await useCase(password: 'secret1');
 
-    expect(
-      result,
-      isA<Err<void>>().having((e) => e.failure, 'failure', failure),
-    );
-    verifyNever(() => favoritesRepository.clearForUser(any()));
-  });
+      expect(
+        result,
+        isA<Err<void>>().having((e) => e.failure, 'failure', failure),
+      );
+      verifyNever(() => favoritesRepository.clearForUser(any()));
+    },
+  );
 
-  test('a deletion logs account_deleted', () async {
+  test('PRF-8: a deletion logs account_deleted', () async {
     when(() => repository.reauthenticate(password: 'secret1'))
         .thenAnswer((_) async => const Ok(null));
     when(repository.deleteAccount).thenAnswer((_) async => const Ok(null));
@@ -98,7 +102,7 @@ void main() {
     ]);
   });
 
-  test('a failed deletion logs nothing', () async {
+  test('PRF-8: a failed deletion logs nothing', () async {
     when(() => repository.reauthenticate(password: 'secret1'))
         .thenAnswer((_) async => const Ok(null));
     when(repository.deleteAccount).thenAnswer(

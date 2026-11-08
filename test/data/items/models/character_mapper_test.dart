@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../helpers/items_fixtures.dart';
 
 void main() {
-  test('maps a character to an item', () {
+  test('ITM-14: maps a character to an item', () {
     expect(testCharacterDto(1).toEntity(), testItem(1));
   });
 
@@ -19,7 +19,7 @@ void main() {
     expect(statusOf('Other'), ItemStatus.unknown);
   });
 
-  test('a page without a next link is the last one', () {
+  test('ITM-3: a page without a next link is the last one', () {
     expect(testPageDto().toEntity(page: 3), testPage(3));
     expect(
       testPageDto(next: null).toEntity(page: 3),

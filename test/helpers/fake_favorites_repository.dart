@@ -8,8 +8,8 @@ import 'package:flutter_starter/domain/auth/repositories/auth_repository.dart';
 import 'package:flutter_starter/domain/favorites/repositories/favorites_repository.dart';
 import 'package:flutter_starter/domain/favorites/usecases/toggle_favorite_use_case.dart';
 import 'package:flutter_starter/domain/items/entities/item.dart';
-import 'package:flutter_starter/presentation/_shared/favorites/favorite_toggle.dart';
-import 'package:flutter_starter/presentation/_shared/favorites/favorite_toggle_cubit.dart';
+import 'package:flutter_starter/presentation/_shared/bloc/favorite/favorite_toggle_cubit.dart';
+import 'package:flutter_starter/presentation/_shared/widgets/button/favorite_toggle.dart';
 import 'package:flutter_starter/presentation/favorites/bloc/favorites_cubit.dart';
 import 'package:get_it/get_it.dart';
 

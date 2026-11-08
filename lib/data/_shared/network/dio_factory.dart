@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_starter/data/_shared/network/auth_interceptor.dart';
+import 'package:flutter_starter/data/_shared/network/retry_interceptor.dart';
 import 'package:flutter_starter/data/_shared/network/token_provider.dart';
 import 'package:talker/talker.dart';
 import 'package:talker_dio_logger/talker_dio_logger.dart';
@@ -19,9 +20,14 @@ Dio createPublicDio({
   required String baseUrl,
   required Talker talker,
   required bool logBodies,
-}) =>
-    Dio(_baseOptions(baseUrl))
-      ..interceptors.add(createDioLogger(talker: talker, logBodies: logBodies));
+}) {
+  final dio = Dio(_baseOptions(baseUrl));
+  return dio
+    ..interceptors.addAll([
+      createDioLogger(talker: talker, logBodies: logBodies),
+      RetryInterceptor(dio: dio),
+    ]);
+}
 
 /// Client for the app's own backend.
 Dio createBackendDio({
@@ -33,10 +39,14 @@ Dio createBackendDio({
   final options = _baseOptions(baseUrl);
   final logger = createDioLogger(talker: talker, logBodies: logBodies);
   final retryDio = Dio(options)..interceptors.add(logger);
-  return Dio(options)
+  final dio = Dio(options);
+  // RetryInterceptor goes after AuthInterceptor, so a 401 is refreshed first,
+  // and after the logger, so every failed attempt is logged.
+  return dio
     ..interceptors.addAll([
       AuthInterceptor(tokenProvider: tokenProvider, retryDio: retryDio),
       logger,
+      RetryInterceptor(dio: dio),
     ]);
 }
 

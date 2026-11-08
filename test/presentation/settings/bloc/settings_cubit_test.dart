@@ -37,7 +37,7 @@ void main() {
   );
 
   blocTest<SettingsCubit, SettingsState>(
-    'setTheme applies and saves the preference',
+    'SET-1: setTheme applies and saves the preference',
     build: () => SettingsCubit(repository),
     act: (cubit) => cubit.setTheme(ThemePreference.dark),
     expect: () => [const SettingsState(settings: dark)],
@@ -45,7 +45,7 @@ void main() {
   );
 
   blocTest<SettingsCubit, SettingsState>(
-    'setLocale applies and saves the preference',
+    'SET-2: setLocale applies and saves the preference',
     build: () => SettingsCubit(repository),
     act: (cubit) => cubit.setLocale(LocalePreference.uk),
     expect: () => [const SettingsState(settings: uk)],
@@ -53,7 +53,7 @@ void main() {
   );
 
   blocTest<SettingsCubit, SettingsState>(
-    'setUsageDataSharing applies and saves the choice',
+    'SET-6: setUsageDataSharing applies and saves the choice',
     build: () => SettingsCubit(repository),
     act: (cubit) => cubit.setUsageDataSharing(false),
     expect: () => [
@@ -65,7 +65,7 @@ void main() {
   );
 
   blocTest<SettingsCubit, SettingsState>(
-    'keeps the new value and reports a failed save',
+    'SET-5: keeps the new value and reports a failed save',
     build: () {
       when(() => repository.save(any()))
           .thenAnswer((_) async => const Err(Failure.cache()));
@@ -79,7 +79,7 @@ void main() {
   );
 
   blocTest<SettingsCubit, SettingsState>(
-    'a new change clears the previous failure',
+    'SET-5: a new change clears the previous failure',
     build: () => SettingsCubit(repository),
     seed: () => const SettingsState(saveFailure: Failure.cache()),
     act: (cubit) => cubit.setTheme(ThemePreference.dark),

@@ -54,7 +54,9 @@ void main() {
     await tester.enterText(find.byType(TextField).last, password);
   }
 
-  testWidgets('an empty form shows localized errors', (tester) async {
+  testWidgets('AUTH-1, AUTH-2: an empty form shows localized errors', (
+    tester,
+  ) async {
     await pumpPage(tester);
 
     await tester.tap(submit);
@@ -64,7 +66,7 @@ void main() {
     expect(find.text('Use at least 6 characters.'), findsOneWidget);
   });
 
-  testWidgets('a malformed email shows its own error', (tester) async {
+  testWidgets('AUTH-1: a malformed email shows its own error', (tester) async {
     await pumpPage(tester);
     await tester.enterText(find.byType(TextField).first, 'user@example');
 
@@ -74,28 +76,30 @@ void main() {
     expect(find.text('Enter a valid email address.'), findsOneWidget);
   });
 
-  testWidgets('submit is disabled while loading, with a trimmed email', (
-    tester,
-  ) async {
-    final result = Completer<Result<AppUser>>();
-    when(() => repository.signIn(email: email, password: password))
-        .thenAnswer((_) => result.future);
-    await pumpPage(tester);
-    await fillForm(tester);
+  testWidgets(
+    'AUTH-4: submit is disabled while loading, with a trimmed email',
+    (tester) async {
+      final result = Completer<Result<AppUser>>();
+      when(() => repository.signIn(email: email, password: password))
+          .thenAnswer((_) => result.future);
+      await pumpPage(tester);
+      await fillForm(tester);
 
-    await tester.tap(submit);
-    await tester.pump();
+      await tester.tap(submit);
+      await tester.pump();
 
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    final button = tester.widget<FilledButton>(find.byType(FilledButton));
-    expect(button.onPressed, isNull);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      final button = tester.widget<FilledButton>(find.byType(FilledButton));
+      expect(button.onPressed, isNull);
 
-    result.complete(const Ok(testUser));
-    await tester.pump();
-    verify(() => repository.signIn(email: email, password: password)).called(1);
-  });
+      result.complete(const Ok(testUser));
+      await tester.pump();
+      verify(() => repository.signIn(email: email, password: password))
+          .called(1);
+    },
+  );
 
-  testWidgets('a failure shows a localized message', (tester) async {
+  testWidgets('AUTH-5: a failure shows a localized message', (tester) async {
     when(() => repository.signIn(email: email, password: password)).thenAnswer(
       (_) async =>
           const Err(Failure.auth(AuthFailureReason.invalidCredentials)),

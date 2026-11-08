@@ -34,13 +34,13 @@ void main() {
   });
 
   blocTest<ProfileCubit, ProfileState>(
-    'the auth state is unknown until the first event',
+    'PRF-1: the auth state is unknown until the first event',
     build: build,
     verify: (cubit) => expect(cubit.state.isAuthKnown, isFalse),
   );
 
   blocTest<ProfileCubit, ProfileState>(
-    'shows the current user and follows changes',
+    'PRF-3: shows the current user and follows changes',
     setUp: () {
       when(repository.authStateChanges)
           .thenAnswer((_) => Stream.fromIterable([testUser, null]));
@@ -53,7 +53,7 @@ void main() {
   );
 
   blocTest<ProfileCubit, ProfileState>(
-    'a guest is known without a user',
+    'PRF-2: a guest is known without a user',
     setUp: () {
       when(repository.authStateChanges)
           .thenAnswer((_) => Stream<AppUser?>.value(null));
@@ -63,7 +63,7 @@ void main() {
   );
 
   blocTest<ProfileCubit, ProfileState>(
-    'a successful sign-out leaves no failure',
+    'PRF-4: a successful sign-out leaves no failure',
     setUp: () {
       when(repository.signOut).thenAnswer((_) async => const Ok(null));
     },
@@ -74,7 +74,7 @@ void main() {
   );
 
   blocTest<ProfileCubit, ProfileState>(
-    'a failed sign-out reports the failure',
+    'PRF-4: a failed sign-out reports the failure',
     setUp: () {
       when(repository.signOut)
           .thenAnswer((_) async => const Err(Failure.network()));
@@ -88,7 +88,7 @@ void main() {
   );
 
   blocTest<ProfileCubit, ProfileState>(
-    'a successful deletion goes through deleting',
+    'PRF-5: a successful deletion goes through deleting',
     setUp: () {
       when(() => repository.reauthenticate(password: password))
           .thenAnswer((_) async => const Ok(null));
@@ -105,7 +105,7 @@ void main() {
   );
 
   blocTest<ProfileCubit, ProfileState>(
-    'a wrong password keeps the account, and a retry clears the failure',
+    'PRF-7: a wrong password keeps the account, and a retry clears the failure',
     setUp: () {
       when(() => repository.reauthenticate(password: password)).thenAnswer(
         (_) async =>

@@ -59,7 +59,7 @@ void main() {
       );
     });
 
-    test('maps the Firebase error code', () async {
+    test('AUTH-5: maps the Firebase error code', () async {
       when(
         () => auth.signInWithEmailAndPassword(email: email, password: password),
       ).thenThrow(FirebaseAuthException(code: 'invalid-credential'));
@@ -138,7 +138,7 @@ void main() {
       expect(await repository.sendPasswordReset(email: email), isA<Ok<void>>());
     });
 
-    test('does not reveal that the address is unknown', () async {
+    test('AUTH-7: does not reveal that the address is unknown', () async {
       when(() => auth.sendPasswordResetEmail(email: email))
           .thenThrow(FirebaseAuthException(code: 'user-not-found'));
 

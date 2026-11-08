@@ -8,9 +8,12 @@
       "Bash(fvm dart format*)",
       "Bash(fvm dart run build_runner build)",
       "Bash(fvm flutter gen-l10n)",
-      "Bash(fvm dart run tool/check_imports.dart*)"
+      "Bash(fvm dart run tool/check_imports.dart*)",
+      "Bash(fvm dart run tool/check_spec.dart*)",
+      "Bash(fvm dart run tool/review_diff.dart*)"
     ],
     "deny": [
+      "Bash(git *--output*)",
       "Read(**/lib/app/firebase/firebase_options*.dart)",
       "Edit(**/lib/l10n/gen/**)"
     ]

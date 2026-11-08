@@ -19,7 +19,7 @@ void main() {
     ('unknown', unknown),
     ('signed out', signedOut),
   ]) {
-    test('$name: every page stays', () {
+    test('NAV-4: $name: every page stays', () {
       for (final location in [...authPages, ...appPages]) {
         expect(redirect(auth, location), isNull, reason: location);
       }
@@ -27,13 +27,13 @@ void main() {
   }
 
   group('signed in', () {
-    test('auth pages go to the profile', () {
+    test('NAV-5: auth pages go to the profile', () {
       for (final location in authPages) {
         expect(redirect(signedIn, location), '/profile', reason: location);
       }
     });
 
-    test('app pages stay', () {
+    test('NAV-5: app pages stay', () {
       for (final location in appPages) {
         expect(redirect(signedIn, location), isNull, reason: location);
       }

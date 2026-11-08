@@ -6,12 +6,15 @@ import 'package:flutter_starter/app/config/flavor.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('fromEnvironment keeps the flavor and defaults the cache TTL', () {
-    final config = AppConfig.fromEnvironment(Flavor.prod);
+  test(
+    'ITM-10: fromEnvironment keeps the flavor and defaults the cache TTL',
+    () {
+      final config = AppConfig.fromEnvironment(Flavor.prod);
 
-    expect(config.flavor, Flavor.prod);
-    expect(config.itemsCacheTtlMinutes, 30);
-  });
+      expect(config.flavor, Flavor.prod);
+      expect(config.itemsCacheTtlMinutes, 30);
+    },
+  );
 
   for (final file in ['config/dev.json', 'config/prod.json']) {
     test('$file defines every value AppConfig reads', () {
@@ -28,7 +31,7 @@ void main() {
     });
   }
 
-  test('both flavors open the same privacy policy page', () {
+  test('SET-9: both flavors open the same privacy policy page', () {
     final urls = ['config/dev.json', 'config/prod.json'].map((file) {
       final values =
           jsonDecode(File(file).readAsStringSync()) as Map<String, dynamic>;

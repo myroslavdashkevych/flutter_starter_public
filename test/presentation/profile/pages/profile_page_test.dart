@@ -67,14 +67,14 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('shows the signed-in email', (tester) async {
+  testWidgets('PRF-3: shows the signed-in email', (tester) async {
     await pumpPage(tester);
 
     expect(find.text(testUser.email!), findsOneWidget);
     expect(signInButton, findsNothing);
   });
 
-  testWidgets('a signed-in user opens the favorites', (tester) async {
+  testWidgets('PRF-3: a signed-in user opens the favorites', (tester) async {
     await pumpPage(tester);
 
     await tester.tap(find.text('Favorites'));
@@ -82,18 +82,19 @@ void main() {
     expect(favoritesTaps, 1);
   });
 
-  testWidgets('an unknown auth state shows neither form of the profile', (
-    tester,
-  ) async {
-    when(repository.authStateChanges)
-        .thenAnswer((_) => const Stream<AppUser?>.empty());
+  testWidgets(
+    'PRF-1: an unknown auth state shows neither form of the profile',
+    (tester) async {
+      when(repository.authStateChanges)
+          .thenAnswer((_) => const Stream<AppUser?>.empty());
 
-    await pumpPage(tester);
+      await pumpPage(tester);
 
-    expect(signInButton, findsNothing);
-    expect(find.text('Sign out'), findsNothing);
-    expect(find.text('Sign in to manage your account.'), findsNothing);
-  });
+      expect(signInButton, findsNothing);
+      expect(find.text('Sign out'), findsNothing);
+      expect(find.text('Sign in to manage your account.'), findsNothing);
+    },
+  );
 
   group('guest', () {
     setUp(() {
@@ -101,7 +102,9 @@ void main() {
           .thenAnswer((_) => Stream<AppUser?>.value(null));
     });
 
-    testWidgets('sees the explanation and no account actions', (tester) async {
+    testWidgets('FAV-2, PRF-2: sees the explanation and no account actions', (
+      tester,
+    ) async {
       await pumpPage(tester);
 
       expect(find.text('Sign in to manage your account.'), findsOneWidget);
@@ -110,7 +113,7 @@ void main() {
       expect(find.text('Favorites'), findsNothing);
     });
 
-    testWidgets('the button calls its callback', (tester) async {
+    testWidgets('PRF-2: the button calls its callback', (tester) async {
       await pumpPage(tester);
 
       await tester.tap(signInButton);
@@ -119,7 +122,7 @@ void main() {
     });
   });
 
-  testWidgets('switches to the guest state when the user signs out', (
+  testWidgets('PRF-4: switches to the guest state when the user signs out', (
     tester,
   ) async {
     final users = StreamController<AppUser?>();
@@ -143,7 +146,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('cancel does not sign out', (tester) async {
+    testWidgets('PRF-4: cancel does not sign out', (tester) async {
       await pumpPage(tester);
       await openDialog(tester);
 
@@ -153,7 +156,7 @@ void main() {
       verifyNever(repository.signOut);
     });
 
-    testWidgets('confirm signs out', (tester) async {
+    testWidgets('PRF-4: confirm signs out', (tester) async {
       when(repository.signOut).thenAnswer((_) async => const Ok(null));
       await pumpPage(tester);
       await openDialog(tester);
@@ -181,7 +184,7 @@ void main() {
   });
 
   group('delete account', () {
-    testWidgets('warns and needs a password', (tester) async {
+    testWidgets('PRF-5: warns and needs a password', (tester) async {
       await pumpPage(tester);
       await openDeleteDialog(tester);
 
@@ -194,27 +197,28 @@ void main() {
       expect(tester.widget<TextButton>(deleteButton).onPressed, isNotNull);
     });
 
-    testWidgets('a wrong password keeps the dialog open with a message', (
-      tester,
-    ) async {
-      when(() => repository.reauthenticate(password: password)).thenAnswer(
-        (_) async =>
-            const Err(Failure.auth(AuthFailureReason.invalidCredentials)),
-      );
-      await pumpPage(tester);
-      await openDeleteDialog(tester);
-      await tester.enterText(find.byType(TextField), password);
-      await tester.pump();
+    testWidgets(
+      'PRF-7: a wrong password keeps the dialog open with a message',
+      (tester) async {
+        when(() => repository.reauthenticate(password: password)).thenAnswer(
+          (_) async =>
+              const Err(Failure.auth(AuthFailureReason.invalidCredentials)),
+        );
+        await pumpPage(tester);
+        await openDeleteDialog(tester);
+        await tester.enterText(find.byType(TextField), password);
+        await tester.pump();
 
-      await tester.tap(deleteButton);
-      await tester.pumpAndSettle();
+        await tester.tap(deleteButton);
+        await tester.pumpAndSettle();
 
-      expect(find.text('Wrong email or password.'), findsOneWidget);
-      expect(find.byType(AlertDialog), findsOneWidget);
-      verifyNever(repository.deleteAccount);
-    });
+        expect(find.text('Wrong email or password.'), findsOneWidget);
+        expect(find.byType(AlertDialog), findsOneWidget);
+        verifyNever(repository.deleteAccount);
+      },
+    );
 
-    testWidgets('success deletes the account and closes the dialog', (
+    testWidgets('PRF-5: success deletes the account and closes the dialog', (
       tester,
     ) async {
       when(() => repository.reauthenticate(password: password))

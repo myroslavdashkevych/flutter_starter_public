@@ -1,4 +1,4 @@
-// Enforces the architecture rules from docs/architecture.md section 3:
+// Enforces the architecture rules from docs/spec/architecture.md, Import rules:
 // - which modules and areas may import each other (_allowedModules);
 // - which external packages each module may import: allow lists for shared,
 //   domain and l10n (_allowedPackages); package ownership between data and
@@ -10,6 +10,8 @@
 //
 // Usage: fvm dart run tool/check_imports.dart
 import 'dart:io';
+
+import 'review_diff.dart' show isNeverRead;
 
 const _ownPackage = 'package:flutter_starter/';
 const _layers = {'domain', 'data', 'presentation'};
@@ -53,7 +55,7 @@ const _blocFileSuffixes = [
   '_event.dart',
 ];
 
-/// Package ownership (docs/architecture.md section 3). Every external package
+/// Package ownership (docs/spec/architecture.md, External packages). Every external package
 /// belongs to either data or presentation, and the other layer must not import
 /// it. A package imported by both layers is a violation unless it is listed in
 /// [_sharedPackages]. New packages need no change here: the layer that imports
@@ -87,7 +89,7 @@ const _knownOwners = {
   'presentation': {'flutter_bloc', 'bloc'},
 };
 
-const _ownershipDocs = 'docs/architecture.md section 3';
+const _ownershipDocs = 'docs/spec/architecture.md, External packages';
 
 /// The service locator is used only in `app/`; everything else receives
 /// dependencies through constructors. `injectable.dart` re-exports
@@ -248,12 +250,15 @@ List<Violation> checkFiles(Map<String, String> files) {
   );
 }
 
-/// Checks every Dart file under `lib/` in [root].
+/// Checks every Dart file under `lib/` in [root], except never-read files
+/// (`isNeverRead` in tool/review_diff.dart), which are never read.
 List<Violation> checkProject(Directory root) {
   final prefixLength = root.path.length + 1;
   return checkFiles({
     for (final file in Directory('${root.path}/lib').listSync(recursive: true))
-      if (file is File && file.path.endsWith('.dart'))
+      if (file is File &&
+          file.path.endsWith('.dart') &&
+          !isNeverRead(file.path.substring(prefixLength)))
         file.path.substring(prefixLength): file.readAsStringSync(),
   });
 }

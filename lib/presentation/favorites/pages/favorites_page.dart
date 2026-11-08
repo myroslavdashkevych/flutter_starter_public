@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_starter/domain/items/entities/item.dart';
 import 'package:flutter_starter/presentation/_shared/l10n/l10n_extension.dart';
-import 'package:flutter_starter/presentation/_shared/widgets/item_tile.dart';
+import 'package:flutter_starter/presentation/_shared/widgets/item/item_tile.dart';
 import 'package:flutter_starter/presentation/favorites/bloc/favorites_cubit.dart';
 import 'package:flutter_starter/presentation/favorites/bloc/favorites_state.dart';
 

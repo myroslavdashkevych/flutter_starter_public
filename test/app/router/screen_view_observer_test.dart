@@ -33,7 +33,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('a push reports the new screen', (tester) async {
+  testWidgets('OBS-3: a push reports the new screen', (tester) async {
     await pumpNavigator(tester);
 
     unawaited(navigator().push(page('second')));
@@ -43,7 +43,7 @@ void main() {
     expect(observer.currentName, 'second');
   });
 
-  testWidgets('a pop reports the screen returned to', (tester) async {
+  testWidgets('OBS-3: a pop reports the screen returned to', (tester) async {
     await pumpNavigator(tester);
     unawaited(navigator().push(page('second')));
     await tester.pumpAndSettle();
@@ -56,7 +56,7 @@ void main() {
     expect(observer.currentName, 'first');
   });
 
-  testWidgets('a replace reports the new screen', (tester) async {
+  testWidgets('OBS-3: a replace reports the new screen', (tester) async {
     await pumpNavigator(tester);
     screens.clear();
 
@@ -67,7 +67,9 @@ void main() {
     expect(observer.currentName, 'other');
   });
 
-  testWidgets('a dialog reports nothing, opened or closed', (tester) async {
+  testWidgets('OBS-4: a dialog reports nothing, opened or closed', (
+    tester,
+  ) async {
     await pumpNavigator(tester);
     screens.clear();
 
@@ -87,7 +89,7 @@ void main() {
     expect(observer.currentName, 'first');
   });
 
-  testWidgets('a bottom sheet reports nothing', (tester) async {
+  testWidgets('OBS-4: a bottom sheet reports nothing', (tester) async {
     await pumpNavigator(tester);
     screens.clear();
 
