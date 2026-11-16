@@ -1,47 +1,53 @@
-// Checks the spec conventions from docs/README.md (Requirements, Screens,
+// Checks the spec conventions from doc/README.md (Requirements, Screens,
 // Links). Every violation starts with the name of its rule:
 // - format: a requirement is `- **<PREFIX>-<n>** <sentence>`, n is 1 or more
 //   without leading zeros;
-// - prefix: one prefix per feature file, no prefix in two files, SCR is
+// - prefix: one prefix per behavior file, no prefix in two files, SCR is
 //   reserved for screens;
 // - scenario: every requirement has a nested `WHEN … THEN …` item;
 // - screen: a screen is `### SCR-<n> <title>` with a `Design:` line;
 // - duplicate: no ID is defined twice;
-// - retired: each feature file ends with one `Retired:` line (`none`, or IDs
-//   of its prefix or SCR), and a retired ID is not defined;
+// - retired: each behavior file ends with one `Retired:` line (`none`, or IDs
+//   of its prefix, SCR, or a prefix that no behavior file uses any more), and a
+//   retired ID is not defined;
 // - gap: per prefix and for SCR, defined plus retired IDs are exactly 1..max,
 //   so a removed requirement cannot free its number;
 // - removed (only with --base): every ID defined in the base revision is
 //   still defined or retired, and every ID retired there is still retired,
 //   so removing the highest ID cannot free its number either; a prefix that
-//   no feature file uses any more is skipped;
+//   no behavior file uses any more is skipped;
 // - reference: every ID mention names a defined ID; a retired ID appears only
 //   on a Retired line;
 // - test name: a test name that starts with an ID has the form
 //   `<ID>: <behavior>` or `<ID>, <ID>: <behavior>`;
 // - coverage: every requirement (not SCR) starts a test or group name in
 //   test/ (alone or in an ID list), or is on the Manual line of its file;
-// - manual: at most one `Manual: <IDs>` line per feature file, right before
+// - manual: at most one `Manual: <IDs>` line per behavior file, right before
 //   the Retired line, with defined IDs of its prefix, each listed once and
 //   without a test named by it;
+// - decision: every `.md` in doc/decision/ is `_template.md` or
+//   `ADR-<nnn>-<slug>.md` directly in it; its first line is
+//   `# <ID>: <text>` with the ID of its file name; no ID is in two files;
 // - link: relative Markdown links point to an existing file and heading.
 //
-// Prefixes are read from docs/spec/features, so nothing here names an area.
-// Limitation: once no feature file uses a prefix, mentions of it are not
-// recognized (docs/guides/new-project.md, Replace the spec).
+// Prefixes are read from doc/spec/behavior, so nothing here names an area.
+// Limitation: once no behavior file uses a prefix, mentions of it are not
+// recognized (doc/guide/new-project.md, Replace the spec).
 // Add new rules here with a unit test.
 //
 // Usage: fvm dart run tool/check_spec.dart [--base <rev>]
-// With --base, the feature files of <rev> are read through git (only
-// docs/spec/features/*.md). Exit codes: 0 clean, 1 violations, 2 usage or
+// With --base, the behavior files of <rev> are read through git (only
+// doc/spec/behavior/*.md). Exit codes: 0 clean, 1 violations, 2 usage or
 // git error.
 import 'dart:convert';
 import 'dart:io';
 
 import 'review_diff.dart' show isNeverRead;
 
-const _featuresDir = 'docs/spec/features/';
+const _behaviorDir = 'doc/spec/behavior/';
 const _screenPrefix = 'SCR';
+const _decisionDir = 'doc/decision/';
+const _decisionTemplate = 'doc/decision/_template.md';
 
 /// These files contain made-up IDs on purpose.
 const _ownFiles = {'tool/check_spec.dart', 'test/tool/check_spec_test.dart'};
@@ -76,6 +82,12 @@ final _when = RegExp(r'\bWHEN\b');
 final _then = RegExp(r'\bTHEN\b');
 final _fence = RegExp(r'^ *(?:```|~~~)');
 final _inlineCode = RegExp(r'`[^`]*`');
+
+/// `ADR-001-<slug>.md` in `doc/decision/`; the number has three digits and is
+/// not 000. Group 1 is the ID.
+final _projectDecision = RegExp(
+  r'^doc/decision/(ADR-(?!000)\d{3})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$',
+);
 final _link = RegExp(r'\[[^\]]*\]\(([^)\s]+)(?: +"[^"]*")?\)');
 
 /// Also splits CRLF files, as a Windows checkout may have them.
@@ -100,8 +112,8 @@ class Violation {
 bool isChecked(String path) {
   if (isNeverRead(path)) return false;
   if (path == 'README.md' || path == 'CLAUDE.md') return true;
-  if (path.startsWith('docs/')) {
-    return path.endsWith('.md') && !path.startsWith('docs/changes/');
+  if (path.startsWith('doc/')) {
+    return path.endsWith('.md') && !path.startsWith('doc/change/');
   }
   if (!path.endsWith('.dart') || !_dartDirs.any(path.startsWith)) return false;
   if (_ownFiles.contains(path)) return false;
@@ -137,15 +149,16 @@ List<Violation> checkFiles(
   read ??= (path) => files[path];
 
   final violations = <Violation>[];
-  final features = _parseFeatures(files, violations);
-  final spec = _checkIds(features, violations);
+  final behaviors = _parseBehaviors(files, violations);
+  final spec = _checkIds(behaviors, violations);
   final tested = _testedIds(files, spec);
-  _checkManual(features, spec, tested, violations);
-  _checkCoverage(features, tested, violations);
+  _checkManual(behaviors, spec, tested, violations);
+  _checkCoverage(behaviors, tested, violations);
+  _checkDecisions(files, violations);
   if (baseFiles != null) {
     // Only the IDs of the base matter; its own violations are not reported.
-    final base = _parseFeatures(baseFiles, []);
-    _checkRemoved(base, features, spec, baseName, violations);
+    final base = _parseBehaviors(baseFiles, []);
+    _checkRemoved(base, behaviors, spec, baseName, violations);
   }
 
   for (final MapEntry(key: path, value: content) in files.entries) {
@@ -162,17 +175,17 @@ List<Violation> checkFiles(
 }
 
 /// Checks the docs, README.md, CLAUDE.md and Dart code in [root]; with
-/// [revision], also against the feature files of that git revision. Throws
+/// [revision], also against the behavior files of that git revision. Throws
 /// [GitException] when the revision cannot be read.
 List<Violation> checkProject(Directory root, {String? revision}) {
-  final baseFiles = revision == null ? null : readBaseFeatures(root, revision);
+  final baseFiles = revision == null ? null : readBaseBehaviors(root, revision);
   final base = root.path;
   final files = <String, String>{};
   for (final path in ['README.md', 'CLAUDE.md']) {
     final file = File('$base/$path');
     if (file.existsSync()) files[path] = file.readAsStringSync();
   }
-  for (final dir in ['docs', 'lib', 'test', 'tool']) {
+  for (final dir in ['doc', 'lib', 'test', 'tool']) {
     final directory = Directory('$base/$dir');
     if (!directory.existsSync()) continue;
     for (final entity in directory.listSync(recursive: true)) {
@@ -196,9 +209,9 @@ List<Violation> checkProject(Directory root, {String? revision}) {
   );
 }
 
-/// Reads `docs/spec/features/*.md` as they are in the git revision [base] of
+/// Reads `doc/spec/behavior/*.md` as they are in the git revision [base] of
 /// the repository at [root]. Throws [GitException].
-Map<String, String> readBaseFeatures(Directory root, String base) {
+Map<String, String> readBaseBehaviors(Directory root, String base) {
   if (base.isEmpty || base.startsWith('-')) {
     throw GitException('not a revision: "$base"');
   }
@@ -229,9 +242,9 @@ Map<String, String> readBaseFeatures(Directory root, String base) {
     '--end-of-options',
     '$base^{commit}',
   ]).trim();
-  final paths = git(['ls-tree', '-z', '--name-only', sha, '--', _featuresDir])
+  final paths = git(['ls-tree', '-z', '--name-only', sha, '--', _behaviorDir])
       .split('\x00')
-      .where(_isFeatureFile);
+      .where(_isBehaviorFile);
   return {
     for (final path in paths) path: git(['show', '$sha:$path']),
   };
@@ -277,8 +290,8 @@ class _Id {
   String get location => '$path:$line';
 }
 
-class _Feature {
-  _Feature(this.path);
+class _Behavior {
+  _Behavior(this.path);
 
   final String path;
   final requirements = <_Id>[];
@@ -307,29 +320,31 @@ class _Spec {
   final Set<String> malformed;
 }
 
-List<_Feature> _parseFeatures(Map<String, String> files, List<Violation> out) =>
-    [
-      for (final path in files.keys.toList()..sort())
-        if (_isFeatureFile(path)) _parseFeature(path, files[path]!, out),
-    ];
+List<_Behavior> _parseBehaviors(
+  Map<String, String> files,
+  List<Violation> out,
+) => [
+  for (final path in files.keys.toList()..sort())
+    if (_isBehaviorFile(path)) _parseBehavior(path, files[path]!, out),
+];
 
-/// The removed rule: compares the feature files of a base revision with the
+/// The removed rule: compares the behavior files of a base revision with the
 /// current ones.
 void _checkRemoved(
-  List<_Feature> base,
-  List<_Feature> features,
+  List<_Behavior> base,
+  List<_Behavior> behaviors,
   _Spec spec,
   String baseName,
   List<Violation> out,
 ) {
   Violation at(_Id id, String path, String rule) {
     final owner = id.prefix == _screenPrefix
-        ? features.where((feature) => feature.path == path).firstOrNull ??
-              features.firstOrNull
-        : features
+        ? behaviors.where((behavior) => behavior.path == path).firstOrNull ??
+              behaviors.firstOrNull
+        : behaviors
               .where(
-                (feature) =>
-                    feature.requirements.firstOrNull?.prefix == id.prefix,
+                (behavior) =>
+                    behavior.requirements.firstOrNull?.prefix == id.prefix,
               )
               .firstOrNull;
     if (owner == null) return Violation(path, id.line, rule);
@@ -337,8 +352,8 @@ void _checkRemoved(
   }
 
   final reported = <String>{};
-  for (final feature in base) {
-    for (final id in [...feature.requirements, ...feature.screens]) {
+  for (final behavior in base) {
+    for (final id in [...behavior.requirements, ...behavior.screens]) {
       if (!_idToken.hasMatch(id.id) || !spec.prefixes.contains(id.prefix)) {
         continue;
       }
@@ -349,13 +364,13 @@ void _checkRemoved(
       out.add(
         at(
           id,
-          feature.path,
+          behavior.path,
           'removed: ${id.id} is defined in $baseName but neither defined nor '
           'retired; add it to the Retired line of its file',
         ),
       );
     }
-    for (final id in feature.retired) {
+    for (final id in behavior.retired) {
       if (!spec.prefixes.contains(id.prefix) || spec.retired.contains(id.id)) {
         continue;
       }
@@ -363,7 +378,7 @@ void _checkRemoved(
       out.add(
         at(
           id,
-          feature.path,
+          behavior.path,
           'removed: ${id.id} is retired in $baseName; a retired ID stays on '
           'the Retired line and is never reused',
         ),
@@ -372,13 +387,13 @@ void _checkRemoved(
   }
 }
 
-bool _isFeatureFile(String path) =>
-    path.startsWith(_featuresDir) &&
+bool _isBehaviorFile(String path) =>
+    path.startsWith(_behaviorDir) &&
     path.endsWith('.md') &&
-    !path.substring(_featuresDir.length).contains('/');
+    !path.substring(_behaviorDir.length).contains('/');
 
-_Feature _parseFeature(String path, String content, List<Violation> out) {
-  final feature = _Feature(path);
+_Behavior _parseBehavior(String path, String content, List<Violation> out) {
+  final behavior = _Behavior(path);
   final lines = content.split(_newline);
   var inFence = false;
   for (var i = 0; i < lines.length; i++) {
@@ -393,7 +408,7 @@ _Feature _parseFeature(String path, String content, List<Violation> out) {
     if (requirement != null) {
       final id = _Id(requirement[1]!, requirement[2]!, path, i + 1);
       _checkNumber(id, out);
-      feature.requirements.add(id);
+      behavior.requirements.add(id);
       if (!_hasScenario(lines, i)) {
         out.add(
           Violation(
@@ -404,7 +419,7 @@ _Feature _parseFeature(String path, String content, List<Violation> out) {
         );
       }
     } else if (_idLikeItem.hasMatch(line)) {
-      feature.malformed.add(i + 1);
+      behavior.malformed.add(i + 1);
       out.add(
         Violation(
           path,
@@ -415,22 +430,22 @@ _Feature _parseFeature(String path, String content, List<Violation> out) {
     } else if (_screen.firstMatch(line) case final screen?) {
       final id = _Id(_screenPrefix, screen[1]!, path, i + 1);
       _checkNumber(id, out);
-      feature.screens.add(id);
+      behavior.screens.add(id);
       if (!_hasDesign(lines, i)) {
         out.add(
           Violation(path, i + 1, 'screen: ${id.id} needs a Design: line'),
         );
       }
     } else if (_screenHeading.hasMatch(line)) {
-      feature.malformed.add(i + 1);
+      behavior.malformed.add(i + 1);
       out.add(
         Violation(path, i + 1, 'screen: a screen is "### SCR-<n> <title>"'),
       );
     }
   }
-  _parseRetired(feature, lines, out);
-  _parseManual(feature, lines, out);
-  return feature;
+  _parseRetired(behavior, lines, out);
+  _parseManual(behavior, lines, out);
+  return behavior;
 }
 
 void _checkNumber(_Id id, List<Violation> out) {
@@ -472,8 +487,12 @@ bool _hasDesign(List<String> lines, int index) {
   return false;
 }
 
-void _parseRetired(_Feature feature, List<String> lines, List<Violation> out) {
-  final path = feature.path;
+void _parseRetired(
+  _Behavior behavior,
+  List<String> lines,
+  List<Violation> out,
+) {
+  final path = behavior.path;
   final retiredLines = [
     for (var i = 0; i < lines.length; i++)
       if (_retiredLine.hasMatch(lines[i])) i,
@@ -493,7 +512,7 @@ void _parseRetired(_Feature feature, List<String> lines, List<Violation> out) {
     out.add(Violation(path, index + 1, 'retired: one Retired line per file'));
   }
   final index = retiredLines.last;
-  feature.retiredLine = index + 1;
+  behavior.retiredLine = index + 1;
   if (index != last) {
     out.add(
       Violation(path, index + 1, 'retired: the Retired line is the last line'),
@@ -518,14 +537,14 @@ void _parseRetired(_Feature feature, List<String> lines, List<Violation> out) {
       out.add(Violation(path, index + 1, 'retired: "$token" is not an ID'));
       continue;
     }
-    feature.retired.add(_Id(match[1]!, match[2]!, path, index + 1));
+    behavior.retired.add(_Id(match[1]!, match[2]!, path, index + 1));
   }
 }
 
 /// The parts of the manual rule that need only this file: count, position
 /// and value of the `Manual:` lines. Runs after [_parseRetired].
-void _parseManual(_Feature feature, List<String> lines, List<Violation> out) {
-  final path = feature.path;
+void _parseManual(_Behavior behavior, List<String> lines, List<Violation> out) {
+  final path = behavior.path;
   final manualLines = [
     for (var i = 0; i < lines.length; i++)
       if (_manualLine.hasMatch(lines[i])) i,
@@ -534,7 +553,7 @@ void _parseManual(_Feature feature, List<String> lines, List<Violation> out) {
     out.add(Violation(path, index + 1, 'manual: one Manual line per file'));
   }
   for (final index in manualLines) {
-    final retiredLine = feature.retiredLine;
+    final retiredLine = behavior.retiredLine;
     final next = lines.indexWhere((line) => line.trim().isNotEmpty, index + 1);
     if (retiredLine != null && next + 1 != retiredLine) {
       out.add(
@@ -563,22 +582,22 @@ void _parseManual(_Feature feature, List<String> lines, List<Violation> out) {
         out.add(Violation(path, index + 1, 'manual: "$token" is not an ID'));
         continue;
       }
-      feature.manual.add(_Id(match[1]!, match[2]!, path, index + 1));
+      behavior.manual.add(_Id(match[1]!, match[2]!, path, index + 1));
     }
   }
 }
 
 /// The parts of the manual rule that need the whole spec and the tests.
 void _checkManual(
-  List<_Feature> features,
+  List<_Behavior> behaviors,
   _Spec spec,
   Map<String, String> tested,
   List<Violation> out,
 ) {
-  for (final feature in features) {
-    final prefix = feature.requirements.firstOrNull?.prefix;
+  for (final behavior in behaviors) {
+    final prefix = behavior.requirements.firstOrNull?.prefix;
     final seen = <String>{};
-    for (final id in feature.manual) {
+    for (final id in behavior.manual) {
       final String problem;
       if (id.prefix != prefix) {
         problem = 'does not belong to this file';
@@ -600,16 +619,16 @@ void _checkManual(
 
 /// Rule coverage.
 void _checkCoverage(
-  List<_Feature> features,
+  List<_Behavior> behaviors,
   Map<String, String> tested,
   List<Violation> out,
 ) {
   final manual = {
-    for (final feature in features)
-      for (final id in feature.manual) id.id,
+    for (final behavior in behaviors)
+      for (final id in behavior.manual) id.id,
   };
-  for (final feature in features) {
-    for (final id in feature.requirements) {
+  for (final behavior in behaviors) {
+    for (final id in behavior.requirements) {
       if (id.prefix == _screenPrefix || !_idToken.hasMatch(id.id)) continue;
       if (tested.containsKey(id.id) || manual.contains(id.id)) continue;
       out.add(
@@ -620,6 +639,44 @@ void _checkCoverage(
           "('${id.id}: …') or put it on the Manual line",
         ),
       );
+    }
+  }
+}
+
+/// Rule decision: the layout of `doc/decision/`.
+void _checkDecisions(Map<String, String> files, List<Violation> out) {
+  final seen = <String, String>{};
+  for (final path in files.keys.toList()..sort()) {
+    if (!path.startsWith(_decisionDir) || !path.endsWith('.md')) continue;
+    if (path == _decisionTemplate) continue;
+    final id = _projectDecision.firstMatch(path)?[1];
+    if (id == null) {
+      out.add(
+        Violation(
+          path,
+          1,
+          'decision: unexpected file; expected `_template.md` or '
+          '`ADR-<nnn>-<slug>.md` in doc/decision/, with <nnn> of '
+          'three digits (not 000) and a lowercase kebab-case <slug>',
+        ),
+      );
+      continue;
+    }
+    final heading = files[path]!.split(_newline).first;
+    if (!heading.startsWith('# $id: ') ||
+        heading.substring(id.length + 4).trim().isEmpty) {
+      out.add(
+        Violation(
+          path,
+          1,
+          'decision: the first line must be `# $id: <decision in a few '
+          'words>`',
+        ),
+      );
+    }
+    final first = seen.putIfAbsent(id, () => path);
+    if (first != path) {
+      out.add(Violation(path, 1, 'decision: $id is already used by $first'));
     }
   }
 }
@@ -668,15 +725,21 @@ class _IdPatterns {
   late final RegExp idList;
 }
 
-/// Rules that need all feature files: prefix, duplicate, retired, gap.
-_Spec _checkIds(List<_Feature> features, List<Violation> out) {
+/// Rules that need all behavior files: prefix, duplicate, retired, gap.
+_Spec _checkIds(List<_Behavior> behaviors, List<Violation> out) {
   final owners = <String, String>{};
   final defined = <String, _Id>{};
   final retired = <String, _Id>{};
+  // A Retired line may also hold IDs of a prefix that no file defines any
+  // more: the old prefix of a renamed area.
+  final currentPrefixes = {
+    for (final behavior in behaviors)
+      ?behavior.requirements.firstOrNull?.prefix,
+  };
 
-  for (final feature in features) {
-    final prefix = feature.requirements.firstOrNull?.prefix;
-    for (final id in feature.requirements) {
+  for (final behavior in behaviors) {
+    final prefix = behavior.requirements.firstOrNull?.prefix;
+    for (final id in behavior.requirements) {
       if (id.prefix == _screenPrefix) {
         out.add(
           Violation(id.path, id.line, 'prefix: SCR is reserved for screens'),
@@ -694,9 +757,9 @@ _Spec _checkIds(List<_Feature> features, List<Violation> out) {
     if (prefix != null && prefix != _screenPrefix) {
       final owner = owners[prefix];
       if (owner == null) {
-        owners[prefix] = feature.path;
+        owners[prefix] = behavior.path;
       } else {
-        final first = feature.requirements.first;
+        final first = behavior.requirements.first;
         out.add(
           Violation(
             first.path,
@@ -707,7 +770,7 @@ _Spec _checkIds(List<_Feature> features, List<Violation> out) {
       }
     }
 
-    for (final id in [...feature.requirements, ...feature.screens]) {
+    for (final id in [...behavior.requirements, ...behavior.screens]) {
       final previous = defined[id.id];
       if (previous == null) {
         defined[id.id] = id;
@@ -722,8 +785,10 @@ _Spec _checkIds(List<_Feature> features, List<Violation> out) {
       }
     }
 
-    for (final id in feature.retired) {
-      if (id.prefix != prefix && id.prefix != _screenPrefix) {
+    for (final id in behavior.retired) {
+      if (id.prefix != prefix &&
+          id.prefix != _screenPrefix &&
+          currentPrefixes.contains(id.prefix)) {
         out.add(
           Violation(
             id.path,
@@ -774,8 +839,8 @@ _Spec _checkIds(List<_Feature> features, List<Violation> out) {
     retired.keys.toSet(),
     {...owners.keys, for (final id in retired.values) id.prefix, _screenPrefix},
     {
-      for (final feature in features)
-        for (final line in feature.malformed) '${feature.path}:$line',
+      for (final behavior in behaviors)
+        for (final line in behavior.malformed) '${behavior.path}:$line',
     },
   );
 }
@@ -789,7 +854,7 @@ void _checkReferences(
   List<Violation> out,
 ) {
   final _IdPatterns(:mention, :testName, :idList) = _IdPatterns(spec);
-  final isFeature = _isFeatureFile(path);
+  final isBehavior = _isBehaviorFile(path);
   final isTest = _isTestFile(path);
 
   final lines = content.split(_newline);
@@ -797,8 +862,8 @@ void _checkReferences(
     final line = lines[i];
     if (spec.malformed.contains('$path:${i + 1}')) continue;
     // The manual rule reports the IDs of a Manual line.
-    if (isFeature && _manualLine.hasMatch(line)) continue;
-    final onRetiredLine = isFeature && _retiredLine.hasMatch(line);
+    if (isBehavior && _manualLine.hasMatch(line)) continue;
+    final onRetiredLine = isBehavior && _retiredLine.hasMatch(line);
     for (final match in mention.allMatches(line)) {
       final id = match[0]!;
       if (spec.defined.containsKey(id)) continue;
@@ -810,7 +875,7 @@ void _checkReferences(
           Violation(
             path,
             i + 1,
-            'reference: $id is not defined in docs/spec/features',
+            'reference: $id is not defined in doc/spec/behavior',
           ),
         );
       }

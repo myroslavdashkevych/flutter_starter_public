@@ -2,9 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter_starter/app/config/app_config.dart';
 import 'package:flutter_starter/app/config/flavor.dart';
 import 'package:flutter_starter/app/di/injection.dart';
-import 'package:flutter_starter/data/_shared/network/dio_factory.dart';
-import 'package:flutter_starter/data/_shared/network/token_provider.dart';
-import 'package:flutter_starter/presentation/settings/bloc/settings_cubit.dart';
+import 'package:flutter_starter/data/_shared/data_source/network/dio_factory.dart';
+import 'package:flutter_starter/data/_shared/data_source/network/token_provider.dart';
+import 'package:flutter_starter/presentation/settings/bloc/settings_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:talker/talker.dart';
@@ -17,9 +17,9 @@ void main() {
   test('configureDependencies registers AppConfig and Talker', () {
     const config = AppConfig(
       flavor: Flavor.dev,
-      itemsApiBaseUrl: 'https://items.invalid',
+      rickAndMortyApiBaseUrl: 'https://characters.invalid',
       backendBaseUrl: 'https://backend.invalid',
-      itemsCacheTtlMinutes: 30,
+      characterCacheTtlMinutes: 30,
       privacyPolicyUrl: 'https://privacy.invalid',
       usageDataSharingDefault: true,
     );
@@ -30,27 +30,27 @@ void main() {
     expect(getIt<Talker>(), same(getIt<Talker>()));
   });
 
-  test('configureDependencies registers the settings cubit', () {
+  test('configureDependencies registers the settings bloc', () {
     const config = AppConfig(
       flavor: Flavor.dev,
-      itemsApiBaseUrl: 'https://items.invalid',
+      rickAndMortyApiBaseUrl: 'https://characters.invalid',
       backendBaseUrl: 'https://backend.invalid',
-      itemsCacheTtlMinutes: 30,
+      characterCacheTtlMinutes: 30,
       privacyPolicyUrl: 'https://privacy.invalid',
       usageDataSharingDefault: true,
     );
 
     configureDependencies(config);
 
-    expect(getIt.isRegistered<SettingsCubit>(), isTrue);
+    expect(getIt.isRegistered<SettingsBloc>(), isTrue);
   });
 
   test('configureDependencies registers both Dio clients', () {
     const config = AppConfig(
       flavor: Flavor.dev,
-      itemsApiBaseUrl: 'https://items.invalid',
+      rickAndMortyApiBaseUrl: 'https://characters.invalid',
       backendBaseUrl: 'https://backend.invalid',
-      itemsCacheTtlMinutes: 30,
+      characterCacheTtlMinutes: 30,
       privacyPolicyUrl: 'https://privacy.invalid',
       usageDataSharingDefault: true,
     );
@@ -63,7 +63,7 @@ void main() {
 
     expect(
       getIt<Dio>(instanceName: publicDioName).options.baseUrl,
-      config.itemsApiBaseUrl,
+      config.rickAndMortyApiBaseUrl,
     );
     expect(
       getIt<Dio>(instanceName: backendDioName).options.baseUrl,

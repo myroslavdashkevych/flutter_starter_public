@@ -2,7 +2,7 @@ import 'package:flutter_starter/app/router/auth_redirect.dart';
 import 'package:flutter_starter/presentation/auth/bloc/auth_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../helpers/auth_fixtures.dart';
+import '../../helper/auth_fixture.dart';
 
 void main() {
   const unknown = AuthState.unknown();
@@ -10,7 +10,12 @@ void main() {
   const signedIn = AuthState.authenticated(testUser);
 
   const authPages = ['/sign-in', '/sign-up', '/reset-password'];
-  const appPages = ['/items', '/items/5', '/profile', '/settings'];
+  const appPages = [
+    '/character-list',
+    '/character-list/5',
+    '/profile',
+    '/settings',
+  ];
 
   String? redirect(AuthState auth, String location) =>
       authRedirect(auth, Uri.parse(location));

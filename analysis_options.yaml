@@ -24,3 +24,9 @@ linter:
     - cancel_subscriptions
     - close_sinks
     - always_use_package_imports
+    # Code style (doc/spec/code-style.md)
+    - sort_constructors_first
+    - sort_unnamed_constructors_first
+    - directives_ordering
+    - avoid_positional_boolean_parameters
+    - prefer_single_quotes

@@ -7,12 +7,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test(
-    'ITM-10: fromEnvironment keeps the flavor and defaults the cache TTL',
+    'CHR-10: fromEnvironment keeps the flavor and defaults the cache TTL',
     () {
       final config = AppConfig.fromEnvironment(Flavor.prod);
 
       expect(config.flavor, Flavor.prod);
-      expect(config.itemsCacheTtlMinutes, 30);
+      expect(config.characterCacheTtlMinutes, 30);
     },
   );
 
@@ -22,9 +22,9 @@ void main() {
           jsonDecode(File(file).readAsStringSync()) as Map<String, dynamic>;
 
       expect(values.keys, {
-        'ITEMS_API_BASE_URL',
+        'RICK_AND_MORTY_API_BASE_URL',
         'BACKEND_BASE_URL',
-        'ITEMS_CACHE_TTL_MINUTES',
+        'CHARACTER_CACHE_TTL_MINUTES',
         'PRIVACY_POLICY_URL',
         'USAGE_DATA_SHARING_DEFAULT',
       });

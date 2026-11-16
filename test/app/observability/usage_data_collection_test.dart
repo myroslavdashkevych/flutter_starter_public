@@ -1,17 +1,21 @@
 import 'package:flutter_starter/app/observability/usage_data_collection.dart';
-import 'package:flutter_starter/domain/_shared/result.dart';
-import 'package:flutter_starter/domain/settings/entities/app_settings.dart';
-import 'package:flutter_starter/presentation/settings/bloc/settings_cubit.dart';
+import 'package:flutter_starter/domain/_shared/wrapper/result/result.dart';
+import 'package:flutter_starter/domain/entity/app_settings.dart';
+import 'package:flutter_starter/domain/use_case/settings/load_settings_use_case.dart';
+import 'package:flutter_starter/domain/use_case/settings/save_settings_use_case.dart';
+import 'package:flutter_starter/domain/use_case/settings/set_usage_data_collection_use_case.dart';
+import 'package:flutter_starter/presentation/settings/bloc/settings_bloc.dart';
+import 'package:flutter_starter/presentation/settings/bloc/settings_event.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../helpers/fake_analytics_service.dart';
-import '../../helpers/fake_crash_reporting_service.dart';
-import '../../helpers/mocks.dart';
+import '../../helper/fake_analytics_service.dart';
+import '../../helper/fake_crash_reporting_service.dart';
+import '../../helper/mock.dart';
 
 void main() {
   late MockSettingsRepository repository;
-  late SettingsCubit cubit;
+  late SettingsBloc settingsBloc;
   late FakeCrashReportingService crashReporting;
   late FakeAnalyticsService analytics;
 
@@ -20,18 +24,23 @@ void main() {
   setUp(() {
     repository = MockSettingsRepository();
     when(() => repository.save(any())).thenAnswer((_) async => const Ok(null));
-    cubit = SettingsCubit(repository);
+    settingsBloc = SettingsBloc(
+      LoadSettingsUseCase(repository),
+      SaveSettingsUseCase(repository),
+    );
     crashReporting = FakeCrashReportingService();
     analytics = FakeAnalyticsService();
-    addTearDown(cubit.close);
+    addTearDown(settingsBloc.close);
   });
 
   Future<void> sync({required bool collectionAllowed}) async {
     final subscription = await syncUsageDataCollection(
-      settingsCubit: cubit,
+      settingsBloc: settingsBloc,
       collectionAllowed: collectionAllowed,
-      crashReporting: crashReporting,
-      analytics: analytics,
+      setUsageDataCollection: SetUsageDataCollectionUseCase(
+        crashReporting,
+        analytics,
+      ),
     );
     addTearDown(subscription.cancel);
   }
@@ -43,8 +52,14 @@ void main() {
 
   Future<void> loadSetting({required bool sharing}) async {
     when(() => repository.load())
-        .thenAnswer((_) async => AppSettings(usageDataSharing: sharing));
-    await cubit.load();
+        .thenAnswer((_) async => Ok(AppSettings(usageDataSharing: sharing)));
+    settingsBloc.add(const SettingsLoadRequested());
+    await settingsBloc.stream.firstWhere((state) => state.isLoaded);
+  }
+
+  Future<void> change(SettingsEvent event) async {
+    settingsBloc.add(event);
+    await pumpEventQueue();
   }
 
   test(
@@ -78,12 +93,10 @@ void main() {
     await loadSetting(sharing: true);
     await sync(collectionAllowed: true);
 
-    await cubit.setUsageDataSharing(false);
-    await Future<void>.delayed(Duration.zero);
+    await change(const SettingsUsageDataSharingChanged(false));
     expectCollection(enabled: false);
 
-    await cubit.setUsageDataSharing(true);
-    await Future<void>.delayed(Duration.zero);
+    await change(const SettingsUsageDataSharingChanged(true));
     expectCollection(enabled: true);
   });
 
@@ -91,8 +104,7 @@ void main() {
     await loadSetting(sharing: false);
     await sync(collectionAllowed: false);
 
-    await cubit.setUsageDataSharing(true);
-    await Future<void>.delayed(Duration.zero);
+    await change(const SettingsUsageDataSharingChanged(true));
 
     expectCollection(enabled: false);
   });
@@ -103,8 +115,7 @@ void main() {
     crashReporting.collectionEnabled = null;
     analytics.collectionEnabled = null;
 
-    await cubit.setTheme(ThemePreference.dark);
-    await Future<void>.delayed(Duration.zero);
+    await change(const SettingsThemeChanged(ThemePreference.dark));
 
     expect(crashReporting.collectionEnabled, isNull);
     expect(analytics.collectionEnabled, isNull);

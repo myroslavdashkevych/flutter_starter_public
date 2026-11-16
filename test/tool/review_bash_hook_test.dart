@@ -29,10 +29,13 @@ void main() {
     return (await process.exitCode, stderr);
   }
 
+  String search(String text) =>
+      'fvm dart run tool/review_diff.dart search $text';
+
   group('change-reviewer', () {
     for (final command in [
       'fvm dart run tool/review_diff.dart files',
-      'fvm dart run tool/review_diff.dart diff 5b18f59 HEAD -- docs lib/app',
+      'fvm dart run tool/review_diff.dart diff 5b18f59 HEAD -- doc lib/app',
       'fvm dart run tool/review_diff.dart show HEAD~1 assets/icon@2x.png',
       'fvm dart run tool/check_spec.dart',
       'fvm dart run tool/check_spec.dart --base develop',
@@ -43,6 +46,10 @@ void main() {
       'fvm flutter analyze',
       'fvm dart analyze tool test/tool',
       'fvm dart format --output=none --set-exit-if-changed tool/a.dart',
+      'fvm dart run tool/review_diff.dart search "feature file"',
+      'fvm dart run tool/review_diff.dart search "a b" HEAD -- doc lib',
+      // Inside double quotes bash expands no tilde.
+      'fvm dart run tool/review_diff.dart search "a-b ~/x"',
     ]) {
       test('allows $command', () async {
         expect((await run(command)).$1, 0);
@@ -80,6 +87,28 @@ void main() {
       ('a tilde at a word start', 'fvm flutter test ~/x'),
       ('a tilde after =', 'fvm flutter test a=~/x'),
       ('an empty command', ''),
+      (
+        'a quoted search text outside search',
+        'fvm dart run tool/review_diff.dart diff "a b"',
+      ),
+      ('two quoted search texts', search('"a b" "c d"')),
+      ('a single-quoted search text', search("'a b'")),
+      ('an empty search text', search('""')),
+      ('an unclosed quote', search('"a b')),
+      ('a search text that starts with a dash', search('"-a b"')),
+      ('a substitution in a search text', search(r'"$(id)"')),
+      ('a variable in a search text', search(r'"a $HOME"')),
+      ('a backtick in a search text', search('"a `id`"')),
+      ('a backslash in a search text', search(r'"a \" b"')),
+      ('a history expansion in a search text', search('"a !1"')),
+      ('a line break in a search text', search('"a\nb"')),
+      ('a substitution after a search text', search(r'"a b" $(id)')),
+      ('a tilde path after a search text', search('"a b" -- ~/x')),
+      ('an operator after a search text', search('"a b"; git log -p')),
+      ('a line break after a search text', search('"a b"\ngit log -p')),
+      ('a tilde glued to a search text', search('"a b"~/x')),
+      ('a quote after a search text', search('"a"b"c d"')),
+      ('a variable after a search text', search(r'"a b" $HOME')),
     ]) {
       test('blocks $reason', () async {
         final (code, stderr) = await run(command);

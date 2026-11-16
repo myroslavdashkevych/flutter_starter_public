@@ -43,6 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+# Gradle reports and outputs of the root Android project
+/android/build/
 
 # Widget Preview related
 .widget_preview/

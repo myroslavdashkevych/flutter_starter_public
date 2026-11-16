@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../tool/check_spec.dart';
 
-const _favPath = 'docs/spec/features/favorites.md';
-const _itmPath = 'docs/spec/features/items.md';
+const _favPath = 'doc/spec/behavior/favorites.md';
+const _chrPath = 'doc/spec/behavior/characters.md';
 
 const _favorites = '''
 # Favorites
@@ -13,9 +13,9 @@ const _favorites = '''
 ## Requirements
 
 - **FAV-1** A signed-in user can add a favorite.
-  - GIVEN a signed-in user WHEN the user taps the toggle THEN the item is a
+  - GIVEN a signed-in user WHEN the user taps the toggle THEN the character is a
     favorite
-- **FAV-2** A guest sees no toggles (ITM-1).
+- **FAV-2** A guest sees no toggles (CHR-1).
   - WHEN a guest opens the list
     THEN no toggle is shown
 
@@ -33,11 +33,11 @@ const _favorites = '''
 Retired: none
 ''';
 
-const _items = '''
-# Items
+const _characters = '''
+# Characters
 
-- **ITM-1** The list loads.
-  - WHEN the list opens THEN items are shown
+- **CHR-1** The list loads.
+  - WHEN the list opens THEN characters are shown
 
 Retired: none
 ''';
@@ -57,7 +57,7 @@ Map<String, String> _withTests(Map<String, String> files) => {
 };
 
 Map<String, String> _project([Map<String, String> files = const {}]) =>
-    _withTests({_favPath: _favorites, _itmPath: _items, ...files});
+    _withTests({_favPath: _favorites, _chrPath: _characters, ...files});
 
 /// [_favorites] with [from] replaced by [to].
 Map<String, String> _favoritesWith(String from, String to) {
@@ -115,23 +115,26 @@ void main() {
 
   group('prefix', () {
     test('rejects a second prefix in one file', () {
-      final files = _favoritesWith('**FAV-2**', '**ITM-2**');
-      _expectOnly({...files, _itmPath: _items}, 'prefix');
+      final files = _favoritesWith('**FAV-2**', '**CHR-2**');
+      _expectOnly({...files, _chrPath: _characters}, 'prefix');
     });
 
     test('rejects a prefix used by two files', () {
       final files = _project({
-        _itmPath: _items.replaceFirst('**ITM-1**', '**FAV-3**'),
+        _chrPath: _characters.replaceFirst('**CHR-1**', '**FAV-3**'),
       });
       expect(
         _rules(files),
-        contains('prefix: FAV is already used by $_favPath'),
+        // Files are read in path order, and `characters.md` sorts first.
+        contains('prefix: FAV is already used by $_chrPath'),
       );
     });
 
     test('rejects SCR as a requirement prefix', () {
       _expectOnly(
-        _project({_itmPath: _items.replaceFirst('**ITM-1**', '**SCR-2**')}),
+        _project({
+          _chrPath: _characters.replaceFirst('**CHR-1**', '**SCR-2**'),
+        }),
         'prefix',
       );
     });
@@ -145,8 +148,8 @@ void main() {
     test('rejects a requirement without nested items', () {
       _expectOnly(
         _project({
-          _itmPath: _items.replaceFirst(
-            '  - WHEN the list opens THEN items are shown\n',
+          _chrPath: _characters.replaceFirst(
+            '  - WHEN the list opens THEN characters are shown\n',
             '',
           ),
         }),
@@ -156,14 +159,19 @@ void main() {
 
     test('rejects an item without THEN, or with THEN before WHEN', () {
       _expectOnly(
-        _project({_itmPath: _items.replaceFirst('THEN items', 'and items')}),
+        _project({
+          _chrPath: _characters.replaceFirst(
+            'THEN characters',
+            'and characters',
+          ),
+        }),
         'scenario',
       );
       _expectOnly(
         _project({
-          _itmPath: _items.replaceFirst(
-            'WHEN the list opens THEN items are shown',
-            'THEN items are shown WHEN the list opens',
+          _chrPath: _characters.replaceFirst(
+            'WHEN the list opens THEN characters are shown',
+            'THEN characters are shown WHEN the list opens',
           ),
         }),
         'scenario',
@@ -195,9 +203,9 @@ void main() {
 
     test('rejects a screen defined in two files', () {
       final files = _project({
-        _itmPath: _items.replaceFirst(
+        _chrPath: _characters.replaceFirst(
           'Retired: none',
-          '### SCR-1 Items\n\n- Design: pending\n\nRetired: none',
+          '### SCR-1 Characters\n\n- Design: pending\n\nRetired: none',
         ),
       });
       _expectOnly(files, 'duplicate');
@@ -237,7 +245,13 @@ void main() {
     });
 
     test('rejects a retired ID of another prefix', () {
-      _expectOnly(_favoritesWith('Retired: none', 'Retired: ITM-2'), 'retired');
+      _expectOnly(_favoritesWith('Retired: none', 'Retired: CHR-2'), 'retired');
+    });
+
+    test('accepts retired IDs of a prefix that no file uses any more', () {
+      _expectClean(
+        _favoritesWith('Retired: none', 'Retired: FAV-3, OLD-1, OLD-2'),
+      );
     });
   });
 
@@ -246,7 +260,7 @@ void main() {
       final files = _favoritesWith(
         '- **FAV-1** A signed-in user can add a favorite.\n'
             '  - GIVEN a signed-in user WHEN the user taps the toggle THEN the '
-            'item is a\n'
+            'character is a\n'
             '    favorite\n',
         '',
       );
@@ -263,7 +277,7 @@ void main() {
     test('accepts a removed requirement that was retired', () {
       _expectClean(
         _favoritesWith(
-          '- **FAV-2** A guest sees no toggles (ITM-1).\n'
+          '- **FAV-2** A guest sees no toggles (CHR-1).\n'
               '  - WHEN a guest opens the list\n'
               '    THEN no toggle is shown\n',
           '',
@@ -281,7 +295,7 @@ void main() {
 
   group('removed', () {
     const fav2 =
-        '- **FAV-2** A guest sees no toggles (ITM-1).\n'
+        '- **FAV-2** A guest sees no toggles (CHR-1).\n'
         '  - WHEN a guest opens the list\n'
         '    THEN no toggle is shown\n';
     const scr1 =
@@ -350,7 +364,7 @@ void main() {
       final files = _favoritesWith(
         '- **FAV-1** A signed-in user can add a favorite.\n'
             '  - GIVEN a signed-in user WHEN the user taps the toggle THEN the '
-            'item is a\n'
+            'character is a\n'
             '    favorite\n',
         '',
       );
@@ -388,36 +402,39 @@ void main() {
       expect(violations.single.path, _favPath);
     });
 
-    test('reports a screen of a deleted file at the first feature file', () {
+    test('reports a screen of a deleted file at the first behavior file', () {
       final violations = checkFiles(
-        _withTests({_itmPath: _items}),
+        _withTests({_chrPath: _characters}),
         baseFiles: _project(),
         baseName: 'develop',
       );
       expect(violations.map((violation) => violation.rule), [
         definedMessage('SCR-1'),
       ]);
-      expect(violations.single.path, _itmPath);
+      expect(violations.single.path, _chrPath);
     });
 
     test('rejects a retired screen that is defined again', () {
       final base = _favoritesWith(retiredNone, 'Retired: SCR-2');
       final files = _project({
-        _itmPath: _items.replaceFirst(
+        _chrPath: _characters.replaceFirst(
           retiredNone,
-          '### SCR-2 Items\n\n- Design: pending\n\n$retiredNone',
+          '### SCR-2 Characters\n\n- Design: pending\n\n$retiredNone',
         ),
       });
       expect(removed(base, files), [retiredMessage('SCR-2')]);
     });
 
-    test('ignores a prefix that no feature file uses any more', () {
+    test('ignores a prefix that no behavior file uses any more', () {
       expect(removed(_project(), _withTests({_favPath: _favorites})), isEmpty);
     });
 
-    test('passes when a screen moves to another feature file', () {
+    test('passes when a screen moves to another behavior file', () {
       final files = _favoritesWith(scr1, '');
-      files[_itmPath] = _items.replaceFirst(retiredNone, '$scr1$retiredNone');
+      files[_chrPath] = _characters.replaceFirst(
+        retiredNone,
+        '$scr1$retiredNone',
+      );
       expect(removed(_project(), files), isEmpty);
     });
   });
@@ -426,15 +443,15 @@ void main() {
     test('accepts defined IDs and tokens of unknown prefixes', () {
       _expectClean(
         _project({
-          'README.md': 'See FAV-2, SCR-1 and ITM-1. UTF-8, SHA-256.\n',
-          'lib/a.dart': '/// Rule ITM-1.\n',
+          'README.md': 'See FAV-2, SCR-1 and CHR-1. UTF-8, SHA-256.\n',
+          'lib/a.dart': '/// Rule CHR-1.\n',
         }),
       );
     });
 
     test('rejects an undefined ID', () {
       expect(_rules(_project({'CLAUDE.md': 'Like FAV-9.\n'})), [
-        'reference: FAV-9 is not defined in docs/spec/features',
+        'reference: FAV-9 is not defined in doc/spec/behavior',
       ]);
     });
 
@@ -458,7 +475,7 @@ void main() {
     test('accepts several IDs separated by ", "', () {
       _expectClean(
         _project({
-          'test/a_test.dart': "test('FAV-1, FAV-2, ITM-1: toggles', () {});\n",
+          'test/a_test.dart': "test('FAV-1, FAV-2, CHR-1: toggles', () {});\n",
         }),
       );
     });
@@ -502,7 +519,7 @@ void main() {
 
     test('reports a requirement without a test at its definition', () {
       final violations = checkFiles(
-        withTests("test('FAV-1, ITM-1: covered', () {});\n"),
+        withTests("test('FAV-1, CHR-1: covered', () {});\n"),
       );
       expect(violations.map((violation) => violation.rule), [uncoveredFav2]);
       expect(violations.single.path, _favPath);
@@ -510,12 +527,12 @@ void main() {
     });
 
     test('a group name with an ID list covers each ID', () {
-      _expectClean(withTests("group('FAV-1, FAV-2, ITM-1: all', () {});\n"));
+      _expectClean(withTests("group('FAV-1, FAV-2, CHR-1: all', () {});\n"));
     });
 
     test('an ID inside a name or outside test/ does not cover', () {
       final files = withTests(
-        "test('FAV-1, ITM-1: covered', () {});\n"
+        "test('FAV-1, CHR-1: covered', () {});\n"
         "test('adds FAV-2: twice', () {});\n",
       );
       expect(_rules(files), [uncoveredFav2]);
@@ -527,7 +544,7 @@ void main() {
     test('a Manual entry covers', () {
       _expectClean({
         ..._favoritesWith('Retired: none', 'Manual: FAV-2\n\nRetired: none'),
-        _fixtureTest: "test('FAV-1, ITM-1: covered', () {});\n",
+        _fixtureTest: "test('FAV-1, CHR-1: covered', () {});\n",
       });
     });
 
@@ -538,9 +555,9 @@ void main() {
   });
 
   group('manual', () {
-    const allTested = "test('FAV-1, FAV-2, ITM-1: covered', () {});\n";
-    const fav2Untested = "test('FAV-1, ITM-1: covered', () {});\n";
-    const itm1Tested = "test('ITM-1: covered', () {});\n";
+    const allTested = "test('FAV-1, FAV-2, CHR-1: covered', () {});\n";
+    const fav2Untested = "test('FAV-1, CHR-1: covered', () {});\n";
+    const chr1Tested = "test('CHR-1: covered', () {});\n";
 
     /// The fixture project with [manual] right before the Retired line of the
     /// favorites file, and [tests] as its only test file.
@@ -555,12 +572,12 @@ void main() {
 
     test('accepts IDs of the file right before the Retired line', () {
       _expectClean(withManual('Manual: FAV-2'));
-      _expectClean(withManual('Manual: FAV-1, FAV-2', tests: itm1Tested));
+      _expectClean(withManual('Manual: FAV-1, FAV-2', tests: chr1Tested));
     });
 
     test('rejects a second Manual line', () {
       expect(
-        _rules(withManual('Manual: FAV-1\nManual: FAV-2', tests: itm1Tested)),
+        _rules(withManual('Manual: FAV-1\nManual: FAV-2', tests: chr1Tested)),
         [
           'manual: the Manual line comes right before the Retired line',
           'manual: one Manual line per file',
@@ -589,8 +606,8 @@ void main() {
     });
 
     test('rejects an ID of another prefix', () {
-      expect(_rules(withManual('Manual: FAV-2, ITM-1')), [
-        'manual: ITM-1 does not belong to this file',
+      expect(_rules(withManual('Manual: FAV-2, CHR-1')), [
+        'manual: CHR-1 does not belong to this file',
       ]);
     });
 
@@ -621,16 +638,95 @@ void main() {
     });
   });
 
+  group('decision', () {
+    const template = 'doc/decision/_template.md';
+    const adr = 'doc/decision/ADR-001-first-choice.md';
+    const adrText = '# ADR-001: First choice\n\n- Status: Accepted\n';
+
+    Map<String, String> withDecisions(Map<String, String> decisions) =>
+        _project({template: '# <ID>: <decision>\n', ...decisions});
+
+    test('accepts the template and an ADR', () {
+      _expectClean(withDecisions({adr: adrText}));
+    });
+
+    test('rejects a file with another name', () {
+      _expectOnly(
+        withDecisions({'doc/decision/notes.md': '# Notes\n'}),
+        'decision',
+      );
+      _expectOnly(
+        withDecisions({'doc/decision/ADR-001-First-Choice.md': adrText}),
+        'decision',
+      );
+    });
+
+    test('rejects an ID with another prefix', () {
+      _expectOnly(
+        withDecisions({
+          'doc/decision/XADR-001-first-choice.md': '# XADR-001: First\n',
+        }),
+        'decision',
+      );
+    });
+
+    test('rejects a file in another subfolder', () {
+      _expectOnly(
+        withDecisions({'doc/decision/other/ADR-001-first-choice.md': adrText}),
+        'decision',
+      );
+    });
+
+    test('rejects a number that is not three digits, or is zero', () {
+      _expectOnly(
+        withDecisions({'doc/decision/ADR-1-first-choice.md': adrText}),
+        'decision',
+      );
+      _expectOnly(
+        withDecisions({
+          'doc/decision/ADR-0001-first-choice.md': '# ADR-0001: First\n',
+        }),
+        'decision',
+      );
+      _expectOnly(
+        withDecisions({
+          'doc/decision/ADR-000-first-choice.md': '# ADR-000: First\n',
+        }),
+        'decision',
+      );
+    });
+
+    test('rejects a heading with another ID', () {
+      _expectOnly(
+        withDecisions({adr: adrText.replaceFirst('ADR-001', 'ADR-002')}),
+        'decision',
+      );
+    });
+
+    test('rejects a missing heading and a heading without text', () {
+      _expectOnly(withDecisions({adr: 'Status: Accepted\n'}), 'decision');
+      _expectOnly(withDecisions({adr: '# ADR-001: \n'}), 'decision');
+      _expectOnly(withDecisions({adr: ''}), 'decision');
+    });
+
+    test('rejects an ID used by two files', () {
+      const second = 'doc/decision/ADR-001-second-choice.md';
+      expect(_rules(withDecisions({adr: adrText, second: adrText})), [
+        'decision: ADR-001 is already used by $adr',
+      ]);
+    });
+  });
+
   group('link', () {
     test('accepts existing files, folders and headings', () {
       _expectClean(
         _project({
           'README.md':
-              '[a]($_itmPath) [b](docs/spec/features/) '
+              '[a]($_chrPath) [b](doc/spec/behavior/) '
               '[c]($_favPath#scr-1-favorites) [d](#notes) [e](#notes-1)\n'
-              '[f](docs/guide.md#2-rename-with-toolinit_projectdart)\n'
+              '[f](doc/guide.md#2-rename-with-toolinit_projectdart)\n'
               '\n## Notes\n\n## Notes\n',
-          'docs/guide.md':
+          'doc/guide.md':
               '# Guide\n\n## 2. Rename with `tool/init_project.dart`\n',
         }),
       );
@@ -648,15 +744,15 @@ void main() {
     });
 
     test('rejects a missing file and a link out of the project', () {
-      expect(_rules(_project({'docs/a.md': '[a](b.md) [c](../../x.md)\n'})), [
+      expect(_rules(_project({'doc/a.md': '[a](b.md) [c](../../x.md)\n'})), [
         'link: b.md does not exist',
         'link: ../../x.md does not exist',
       ]);
     });
 
     test('rejects a missing heading', () {
-      expect(_rules(_project({'README.md': '[a]($_itmPath#nope)\n'})), [
-        'link: $_itmPath has no heading #nope',
+      expect(_rules(_project({'README.md': '[a]($_chrPath#nope)\n'})), [
+        'link: $_chrPath has no heading #nope',
       ]);
     });
   });
@@ -666,8 +762,8 @@ void main() {
       for (final path in [
         'README.md',
         'CLAUDE.md',
-        'docs/README.md',
-        'docs/spec/features/items.md',
+        'doc/README.md',
+        'doc/spec/behavior/characters.md',
         'lib/app/app.dart',
         'test/a_test.dart',
         'tool/check_imports.dart',
@@ -678,8 +774,8 @@ void main() {
 
     test('skips change folders, generated code and its own files', () {
       for (final path in [
-        'docs/changes/2026-01-01-x/proposal.md',
-        'docs/design/screens/a.webp',
+        'doc/change/2026-01-01-x/proposal.md',
+        'doc/design/screen/a.webp',
         'lib/a.g.dart',
         'lib/a.freezed.dart',
         'lib/a.config.dart',
@@ -695,9 +791,9 @@ void main() {
 
     test('skips never-read files', () {
       for (final path in [
-        'lib/app/firebase/firebase_options_dev.dart',
-        'lib/app/firebase/firebase_options_prod.dart',
-        'docs/.env.md',
+        'lib/app/config/firebase/firebase_options_dev.dart',
+        'lib/app/config/firebase/firebase_options_prod.dart',
+        'doc/.env.md',
       ]) {
         expect(isChecked(path), isFalse, reason: path);
       }
@@ -729,7 +825,7 @@ void main() {
     test('never opens a never-read file', () {
       writeFiles(_project({'README.md': '[a]($_favPath)\n'}));
       // Not valid UTF-8: reading it as a string would throw.
-      File('${root.path}/lib/app/firebase/firebase_options_dev.dart')
+      File('${root.path}/lib/app/config/firebase/firebase_options_dev.dart')
         ..createSync(recursive: true)
         ..writeAsBytesSync([0xff, 0xfe, 0xfd]);
       final out = StringBuffer();
@@ -739,9 +835,9 @@ void main() {
     });
 
     test('never opens a never-read link target to check its anchor', () {
-      writeFiles(_project({'README.md': '[a](docs/.env.md#a)\n'}));
+      writeFiles(_project({'README.md': '[a](doc/.env.md#a)\n'}));
       // Not valid UTF-8: reading it as a string would throw.
-      File('${root.path}/docs/.env.md')
+      File('${root.path}/doc/.env.md')
         ..createSync(recursive: true)
         ..writeAsBytesSync([0xff, 0xfe, 0xfd]);
       final out = StringBuffer();
@@ -763,7 +859,7 @@ void main() {
 
     test('skips change folders', () {
       writeFiles(
-        _project({'docs/changes/2026-01-01-x/proposal.md': '**FAV-3** new\n'}),
+        _project({'doc/change/2026-01-01-x/proposal.md': '**FAV-3** new\n'}),
       );
 
       expect(run(root, StringBuffer()), 0);
@@ -803,7 +899,7 @@ void main() {
       test('with a base, reports an ID removed since that revision', () {
         writeFiles({
           _favPath: _favorites.replaceFirst(
-            '- **FAV-2** A guest sees no toggles (ITM-1).\n'
+            '- **FAV-2** A guest sees no toggles (CHR-1).\n'
                 '  - WHEN a guest opens the list\n'
                 '    THEN no toggle is shown\n',
             '',

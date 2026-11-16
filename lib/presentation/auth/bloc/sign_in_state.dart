@@ -1,5 +1,5 @@
-import 'package:flutter_starter/domain/_shared/failure.dart';
-import 'package:flutter_starter/presentation/auth/bloc/auth_validators.dart';
+import 'package:flutter_starter/domain/_shared/wrapper/result/failure.dart';
+import 'package:flutter_starter/presentation/auth/bloc/auth_field_error.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'sign_in_state.freezed.dart';

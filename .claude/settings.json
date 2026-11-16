@@ -14,7 +14,7 @@
     ],
     "deny": [
       "Bash(git *--output*)",
-      "Read(**/lib/app/firebase/firebase_options*.dart)",
+      "Read(**/lib/app/config/firebase/firebase_options*.dart)",
       "Edit(**/lib/l10n/gen/**)"
     ]
   },

@@ -1,4 +1,4 @@
-import 'package:flutter_starter/domain/auth/entities/app_user.dart';
+import 'package:flutter_starter/domain/entity/app_user.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'auth_state.freezed.dart';

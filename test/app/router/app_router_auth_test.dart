@@ -1,43 +1,53 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_starter/app/app.dart';
 import 'package:flutter_starter/app/config/app_config.dart';
 import 'package:flutter_starter/app/config/app_info.dart';
 import 'package:flutter_starter/app/config/flavor.dart';
 import 'package:flutter_starter/app/di/injection.dart';
 import 'package:flutter_starter/app/router/app_router.dart';
-import 'package:flutter_starter/domain/_shared/failure.dart';
-import 'package:flutter_starter/domain/_shared/result.dart';
-import 'package:flutter_starter/domain/_shared/services/analytics_service.dart';
-import 'package:flutter_starter/domain/auth/entities/app_user.dart';
-import 'package:flutter_starter/domain/auth/usecases/delete_account_use_case.dart';
-import 'package:flutter_starter/domain/items/usecases/get_item_details_use_case.dart';
-import 'package:flutter_starter/domain/items/usecases/get_items_page_use_case.dart';
-import 'package:flutter_starter/domain/notifications/usecases/request_notification_permission_use_case.dart';
+import 'package:flutter_starter/domain/_shared/wrapper/result/failure.dart';
+import 'package:flutter_starter/domain/_shared/wrapper/result/result.dart';
+import 'package:flutter_starter/domain/entity/app_user.dart';
+import 'package:flutter_starter/domain/use_case/auth/delete_account_use_case.dart';
+import 'package:flutter_starter/domain/use_case/auth/send_password_reset_use_case.dart';
+import 'package:flutter_starter/domain/use_case/auth/sign_in_use_case.dart';
+import 'package:flutter_starter/domain/use_case/auth/sign_out_use_case.dart';
+import 'package:flutter_starter/domain/use_case/auth/sign_up_use_case.dart';
+import 'package:flutter_starter/domain/use_case/auth/watch_auth_state_use_case.dart';
+import 'package:flutter_starter/domain/use_case/character/get_character_detail_use_case.dart';
+import 'package:flutter_starter/domain/use_case/character/get_character_page_use_case.dart';
+import 'package:flutter_starter/domain/use_case/character/track_character_opened_use_case.dart';
+import 'package:flutter_starter/domain/use_case/character/track_search_use_case.dart';
+import 'package:flutter_starter/domain/use_case/notification/request_notification_permission_use_case.dart';
+import 'package:flutter_starter/domain/use_case/notification/should_ask_notification_permission_use_case.dart';
+import 'package:flutter_starter/domain/use_case/observability/track_screen_view_use_case.dart';
+import 'package:flutter_starter/domain/use_case/settings/load_settings_use_case.dart';
+import 'package:flutter_starter/domain/use_case/settings/save_settings_use_case.dart';
 import 'package:flutter_starter/presentation/auth/bloc/auth_bloc.dart';
-import 'package:flutter_starter/presentation/auth/bloc/reset_password_cubit.dart';
-import 'package:flutter_starter/presentation/auth/bloc/sign_in_cubit.dart';
-import 'package:flutter_starter/presentation/auth/bloc/sign_up_cubit.dart';
-import 'package:flutter_starter/presentation/auth/pages/reset_password_page.dart';
-import 'package:flutter_starter/presentation/auth/pages/sign_in_page.dart';
-import 'package:flutter_starter/presentation/auth/pages/sign_up_page.dart';
-import 'package:flutter_starter/presentation/item_details/bloc/item_details_cubit.dart';
-import 'package:flutter_starter/presentation/item_details/pages/item_details_page.dart';
-import 'package:flutter_starter/presentation/items_list/bloc/items_list_bloc.dart';
-import 'package:flutter_starter/presentation/profile/bloc/profile_cubit.dart';
-import 'package:flutter_starter/presentation/settings/bloc/settings_cubit.dart';
+import 'package:flutter_starter/presentation/auth/bloc/reset_password_bloc.dart';
+import 'package:flutter_starter/presentation/auth/bloc/sign_in_bloc.dart';
+import 'package:flutter_starter/presentation/auth/bloc/sign_up_bloc.dart';
+import 'package:flutter_starter/presentation/auth/page/reset_password_page.dart';
+import 'package:flutter_starter/presentation/auth/page/sign_in_page.dart';
+import 'package:flutter_starter/presentation/auth/page/sign_up_page.dart';
+import 'package:flutter_starter/presentation/character_detail/bloc/character_detail_bloc.dart';
+import 'package:flutter_starter/presentation/character_detail/page/character_detail_page.dart';
+import 'package:flutter_starter/presentation/character_list/bloc/character_list_bloc.dart';
+import 'package:flutter_starter/presentation/profile/bloc/profile_bloc.dart';
+import 'package:flutter_starter/presentation/settings/bloc/settings_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:talker/talker.dart';
 
-import '../../helpers/auth_fixtures.dart';
-import '../../helpers/fake_analytics_service.dart';
-import '../../helpers/fake_favorites_repository.dart';
-import '../../helpers/fake_notifications_repository.dart';
-import '../../helpers/items_fixtures.dart';
-import '../../helpers/mocks.dart';
+import '../../helper/auth_fixture.dart';
+import '../../helper/character_fixture.dart';
+import '../../helper/fake_analytics_service.dart';
+import '../../helper/fake_favorite_repository.dart';
+import '../../helper/fake_notification_repository.dart';
+import '../../helper/mock.dart';
 
 void main() {
   late FakeAnalyticsService analytics;
@@ -45,7 +55,7 @@ void main() {
   const password = 'secret1';
 
   late MockAuthRepository authRepository;
-  late FakeFavoritesRepository favorites;
+  late FakeFavoriteRepository favorites;
   late StreamController<AppUser?> users;
   AppUser? currentUser;
 
@@ -68,23 +78,25 @@ void main() {
       ..registerSingleton(
         const AppConfig(
           flavor: Flavor.dev,
-          itemsApiBaseUrl: 'https://items.invalid',
+          rickAndMortyApiBaseUrl: 'https://characters.invalid',
           backendBaseUrl: 'https://backend.invalid',
-          itemsCacheTtlMinutes: 30,
+          characterCacheTtlMinutes: 30,
           privacyPolicyUrl: 'https://privacy.invalid',
           usageDataSharingDefault: true,
         ),
       )
-      ..registerSingleton<AnalyticsService>(analytics = FakeAnalyticsService())
+      ..registerSingleton(
+        TrackScreenViewUseCase(analytics = FakeAnalyticsService()),
+      )
       ..registerSingleton(Talker());
-    final itemsRepository = MockItemsRepository();
-    when(() => itemsRepository.getPage(page: 1))
+    final characterRepository = MockCharacterRepository();
+    when(() => characterRepository.getPage(page: 1))
         .thenAnswer((_) async => Ok(testPage(1, ids: [1], hasMore: false)));
-    when(() => itemsRepository.getById(1))
-        .thenAnswer((_) async => Ok(testItem(1)));
-    when(() => itemsRepository.getById(2))
+    when(() => characterRepository.getById(1))
+        .thenAnswer((_) async => Ok(testCharacter(1)));
+    when(() => characterRepository.getById(2))
         .thenAnswer((_) async => const Err(Failure.notFound()));
-    favorites = FakeFavoritesRepository();
+    favorites = FakeFavoriteRepository();
     authRepository = MockAuthRepository();
     users = StreamController<AppUser?>.broadcast();
     currentUser = null;
@@ -108,33 +120,41 @@ void main() {
         });
     getIt
       ..registerFactory(
-        () => ItemsListBloc(
-          GetItemsPageUseCase(itemsRepository),
-          FakeAnalyticsService(),
+        () => CharacterListBloc(
+          GetCharacterPageUseCase(characterRepository),
+          TrackSearchUseCase(FakeAnalyticsService()),
         ),
       )
       ..registerFactory(
-        () => ItemDetailsCubit(
-          GetItemDetailsUseCase(itemsRepository),
-          FakeAnalyticsService(),
+        () => CharacterDetailBloc(
+          GetCharacterDetailUseCase(characterRepository),
+          TrackCharacterOpenedUseCase(FakeAnalyticsService()),
+        ),
+      )
+      ..registerFactory(
+        () => ShouldAskNotificationPermissionUseCase(
+          FakeNotificationRepository(),
         ),
       )
       ..registerFactory(
         () =>
-            RequestNotificationPermissionUseCase(FakeNotificationsRepository()),
+            RequestNotificationPermissionUseCase(FakeNotificationRepository()),
       )
       ..registerFactory(
-        () => SignInCubit(authRepository, FakeAnalyticsService()),
+        () => SignInBloc(SignInUseCase(authRepository, FakeAnalyticsService())),
       )
       ..registerFactory(
-        () => SignUpCubit(authRepository, FakeAnalyticsService()),
+        () => SignUpBloc(SignUpUseCase(authRepository, FakeAnalyticsService())),
       )
       ..registerFactory(
-        () => ResetPasswordCubit(authRepository, FakeAnalyticsService()),
+        () => ResetPasswordBloc(
+          SendPasswordResetUseCase(authRepository, FakeAnalyticsService()),
+        ),
       )
       ..registerFactory(
-        () => ProfileCubit(
-          authRepository,
+        () => ProfileBloc(
+          WatchAuthStateUseCase(authRepository),
+          SignOutUseCase(authRepository),
           DeleteAccountUseCase(
             authRepository,
             favorites,
@@ -142,7 +162,7 @@ void main() {
           ),
         ),
       );
-    registerFavoriteCubits(getIt, authRepository, favorites);
+    registerFavoriteBlocs(getIt, authRepository, favorites);
   });
 
   tearDown(() async {
@@ -152,17 +172,23 @@ void main() {
 
   // Built inside each test, so that the bloc lives in the fake async zone.
   Future<GoRouter> pumpApp(WidgetTester tester) async {
-    final authBloc = AuthBloc(authRepository);
-    final settingsCubit = SettingsCubit(MockSettingsRepository());
+    final authBloc = AuthBloc(WatchAuthStateUseCase(authRepository));
+    final settingsRepository = MockSettingsRepository();
+    final settingsBloc = SettingsBloc(
+      LoadSettingsUseCase(settingsRepository),
+      SaveSettingsUseCase(settingsRepository),
+    );
     final router = createAppRouter(authBloc);
-    addTearDown(() async {
+    // In the fake zone the future of close() never completes, so it is not
+    // awaited.
+    addTearDown(() {
       router.dispose();
-      await authBloc.close();
-      await settingsCubit.close();
+      unawaited(authBloc.close());
+      unawaited(settingsBloc.close());
     });
     tester.platformDispatcher.localesTestValue = const [Locale('en')];
     addTearDown(tester.platformDispatcher.clearLocalesTestValue);
-    await tester.pumpWidget(App(router: router, settingsCubit: settingsCubit));
+    await tester.pumpWidget(App(router: router, settingsBloc: settingsBloc));
     await tester.pumpAndSettle();
     return router;
   }
@@ -203,22 +229,24 @@ void main() {
 
   group('guest', () {
     testWidgets(
-      'NAV-1, NAV-4: starts on the items with the bottom navigation',
+      'NAV-1, NAV-4: starts on the characters with the bottom navigation',
       (tester) async {
         final router = await pumpApp(tester);
 
-        expect(location(router), '/items');
-        expect(find.text('Item 1'), findsOneWidget);
+        expect(location(router), '/character-list');
+        expect(find.text('Character 1'), findsOneWidget);
         expect(navigationBar, findsOneWidget);
       },
     );
 
-    testWidgets('NAV-4: reaches item details and settings', (tester) async {
+    testWidgets('NAV-4: reaches character details and settings', (
+      tester,
+    ) async {
       final router = await pumpApp(tester);
 
-      await tapText(tester, 'Item 1');
-      expect(location(router), '/items/1');
-      expect(find.byType(ItemDetailsPage), findsOneWidget);
+      await tapText(tester, 'Character 1');
+      expect(location(router), '/character-list/1');
+      expect(find.byType(CharacterDetailPage), findsOneWidget);
 
       await tapTab(tester, 'Settings');
       expect(location(router), '/settings');
@@ -281,13 +309,13 @@ void main() {
 
     testWidgets('NAV-6: the other tabs keep their stacks', (tester) async {
       final router = await pumpApp(tester);
-      await tapText(tester, 'Item 1');
+      await tapText(tester, 'Character 1');
       await openSignIn(tester);
 
       await submitSignIn(tester);
-      await tapTab(tester, 'Items');
+      await tapTab(tester, 'Characters');
 
-      expect(location(router), '/items/1');
+      expect(location(router), '/character-list/1');
     });
   });
 
@@ -327,11 +355,11 @@ void main() {
     testWidgets('FAV-2: a guest sees no favorite controls', (tester) async {
       await pumpApp(tester);
 
-      expect(find.text('Item 1'), findsOneWidget);
+      expect(find.text('Character 1'), findsOneWidget);
       expect(toggleOff, findsNothing);
       expect(toggleOn, findsNothing);
 
-      await tapText(tester, 'Item 1');
+      await tapText(tester, 'Character 1');
       expect(toggleOff, findsNothing);
 
       await tapTab(tester, 'Profile');
@@ -343,10 +371,10 @@ void main() {
     ) async {
       final router = await pumpApp(tester);
 
-      router.go('/profile/favorites');
+      router.go('/profile/favorite-list');
       await tester.pumpAndSettle();
 
-      expect(location(router), '/profile/favorites');
+      expect(location(router), '/profile/favorite-list');
       expect(find.text('Sign in to save favorites'), findsOneWidget);
 
       await tester.tap(signInButton);
@@ -355,8 +383,41 @@ void main() {
       expect(signInPage, findsOneWidget);
     });
 
+    testWidgets('FAV-6: a guest who signs in from there lands on the profile', (
+      tester,
+    ) async {
+      when(() => authRepository.signIn(email: email, password: password))
+          .thenAnswer((_) async {
+            emitUser(testUser);
+            return const Ok(testUser);
+          });
+      final router = await pumpApp(tester);
+      router.go('/profile/favorite-list');
+      await tester.pumpAndSettle();
+      await tester.tap(signInButton);
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).at(0), email);
+      await tester.enterText(find.byType(TextField).at(1), password);
+      await tester.tap(signInButton);
+      await tester.pumpAndSettle();
+
+      expect(location(router), '/profile');
+    });
+
     group('signed in', () {
       setUp(() => currentUser = testUser);
+
+      testWidgets('PRF-3: Favorites in the profile opens the favorites route', (
+        tester,
+      ) async {
+        final router = await pumpApp(tester);
+
+        await tapTab(tester, 'Profile');
+        await tapText(tester, 'Favorites');
+
+        expect(location(router), '/profile/favorite-list');
+      });
 
       testWidgets('FAV-3: a change on one screen shows on the others', (
         tester,
@@ -369,15 +430,15 @@ void main() {
 
         await tapTab(tester, 'Profile');
         await tapText(tester, 'Favorites');
-        expect(location(router), '/profile/favorites');
-        expect(find.text('Item 1'), findsOneWidget);
+        expect(location(router), '/profile/favorite-list');
+        expect(find.text('Character 1'), findsOneWidget);
 
         await tester.tap(toggleOn);
         await tester.pumpAndSettle();
-        expect(find.text('Item 1'), findsNothing);
+        expect(find.text('Character 1'), findsNothing);
         expect(find.textContaining('No favorites yet'), findsOneWidget);
 
-        await tapTab(tester, 'Items');
+        await tapTab(tester, 'Characters');
         expect(toggleOff, findsOneWidget);
         expect(toggleOn, findsNothing);
       });
@@ -385,34 +446,34 @@ void main() {
       testWidgets(
         'FAV-14: a favorite opens its details inside the profile tab',
         (tester) async {
-          favorites.items.add(testItem(1));
+          favorites.characters.add(testCharacter(1));
           final router = await pumpApp(tester);
           await tapTab(tester, 'Profile');
           await tapText(tester, 'Favorites');
 
-          await tester.tap(find.text('Item 1'));
+          await tester.tap(find.text('Character 1'));
           await tester.pumpAndSettle();
 
-          expect(location(router), '/profile/favorites/1');
-          expect(find.byType(ItemDetailsPage), findsOneWidget);
+          expect(location(router), '/profile/favorite-list/1');
+          expect(find.byType(CharacterDetailPage), findsOneWidget);
           expect(navigationBar, findsOneWidget);
           expect(toggleOn, findsOneWidget);
 
           await tester.pageBack();
           await tester.pumpAndSettle();
-          expect(location(router), '/profile/favorites');
+          expect(location(router), '/profile/favorite-list');
         },
       );
 
       testWidgets(
-        'FAV-10: a missing item can be removed and returns to the list',
+        'FAV-10: a missing character can be removed and returns to the list',
         (tester) async {
-          favorites.items.addAll([testItem(2), testItem(1)]);
+          favorites.characters.addAll([testCharacter(2), testCharacter(1)]);
           final router = await pumpApp(tester);
           await tapTab(tester, 'Profile');
           await tapText(tester, 'Favorites');
 
-          await tester.tap(find.text('Item 2'));
+          await tester.tap(find.text('Character 2'));
           await tester.pumpAndSettle();
 
           expect(find.text('Nothing was found.'), findsOneWidget);
@@ -423,18 +484,18 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          expect(location(router), '/profile/favorites');
-          expect(find.text('Item 2'), findsNothing);
-          expect(find.text('Item 1'), findsOneWidget);
+          expect(location(router), '/profile/favorite-list');
+          expect(find.text('Character 2'), findsNothing);
+          expect(find.text('Character 1'), findsOneWidget);
         },
       );
 
       testWidgets(
-        'FAV-10, ITM-15: a missing item in the items tab keeps the retry',
+        'FAV-10, CHR-15: a missing character in the characters tab keeps the retry',
         (tester) async {
           final router = await pumpApp(tester);
 
-          router.go('/items/2');
+          router.go('/character-list/2');
           await tester.pumpAndSettle();
 
           expect(find.text('Retry'), findsOneWidget);
@@ -485,7 +546,7 @@ void main() {
           });
       final router = await pumpApp(tester);
       await tapTab(tester, 'Profile');
-      router.go('/profile/favorites');
+      router.go('/profile/favorite-list');
       await tester.pumpAndSettle();
       await tester.tap(signInButton);
       await tester.pumpAndSettle();

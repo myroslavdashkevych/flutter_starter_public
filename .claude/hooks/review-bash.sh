@@ -35,6 +35,16 @@ patterns=(
   "^fvm dart format --output=none( --set-exit-if-changed)?( $arg)+\$"
 )
 
+# A search text may be one double-quoted phrase. Inside double quotes bash
+# expands only `$`, a backtick, `\` and `!`, which the class leaves out, and
+# never a tilde; the text does not start with `-`, so it is not a flag.
+quoted='"[A-Za-z0-9 ._/=:^~@+,][A-Za-z0-9 ._/=:^~@+,-]*"'
+search="^fvm dart run tool/review_diff\\.dart search $quoted( $arg| --)*\$"
+rest=${cmd#*\"*\"}
+if [[ "$cmd" =~ $search && "$rest" =~ $safe && ! "$rest" =~ (^|[ =:])~ ]]; then
+  exit 0
+fi
+
 if [[ "$cmd" =~ $safe && ! "$cmd" =~ (^|[ =:])~ ]]; then
   for pattern in "${patterns[@]}"; do
     [[ "$cmd" =~ $pattern ]] && exit 0
@@ -43,9 +53,10 @@ fi
 
 cat >&2 <<EOF
 Blocked: not a change-reviewer command: $cmd
-Allowed, one command per call, from the repository root, without cd, quotes,
-pipes, redirects or other flags:
+Allowed, one command per call, from the repository root, without cd, quotes
+(except one double-quoted search phrase), pipes, redirects or other flags:
   fvm dart run tool/review_diff.dart <args>
+  fvm dart run tool/review_diff.dart search "<phrase>" [<commit>] [-- <paths>]
   fvm dart run tool/check_spec.dart [--base <ref>]
   fvm dart run tool/check_imports.dart
   fvm flutter test [<paths>]

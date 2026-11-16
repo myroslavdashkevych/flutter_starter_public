@@ -75,11 +75,12 @@ final _sshKeyName = RegExp(r'^id_(rsa|ecdsa|ed25519)(_[^.]*)?(\.pub)?$');
 /// Whether [path] is never read, printed or diffed. Matches, by file name
 /// anywhere in the repository and ignoring case: `google-services.json`,
 /// `GoogleService-Info.plist`, `firebase_options*.dart` (the generated
-/// Firebase options in lib/app/firebase/), `.env*`, `key.properties`, `*.jks`,
-/// `*.keystore`, `*.p12`, `*.pfx`, `*.p8`, `*.pem`, `*.mobileprovision`,
-/// `*service-account*.json`, SSH key names (`id_rsa*`, `id_ecdsa*`,
-/// `id_ed25519*`); and any path inside a `.ssh/` folder. Empty and `.`
-/// segments are ignored, so a trailing `/` or `/.` cannot hide the name.
+/// Firebase options in lib/app/config/firebase/), `.env*`, `key.properties`,
+/// `*.jks`, `*.keystore`, `*.p12`, `*.pfx`, `*.p8`, `*.pem`,
+/// `*.mobileprovision`, `*service-account*.json`, SSH key names (`id_rsa*`,
+/// `id_ecdsa*`, `id_ed25519*`); and any path inside a `.ssh/` folder. Empty
+/// and `.` segments are ignored, so a trailing `/` or `/.` cannot hide the
+/// name.
 bool isNeverRead(String path) {
   final segments = path
       .replaceAll(r'\', '/')

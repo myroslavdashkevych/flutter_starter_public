@@ -1,13 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter_starter/app/observability/crash_reporting_user_sync.dart';
-import 'package:flutter_starter/domain/auth/entities/app_user.dart';
+import 'package:flutter_starter/domain/entity/app_user.dart';
+import 'package:flutter_starter/domain/use_case/auth/watch_auth_state_use_case.dart';
+import 'package:flutter_starter/domain/use_case/observability/set_crash_reporting_user_use_case.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../helpers/auth_fixtures.dart';
-import '../../helpers/fake_crash_reporting_service.dart';
-import '../../helpers/mocks.dart';
+import '../../helper/auth_fixture.dart';
+import '../../helper/fake_crash_reporting_service.dart';
+import '../../helper/mock.dart';
 
 void main() {
   test(
@@ -20,8 +22,8 @@ void main() {
       final crashReporting = FakeCrashReportingService();
 
       final subscription = syncCrashReportingUser(
-        authRepository: repository,
-        crashReporting: crashReporting,
+        watchAuthState: WatchAuthStateUseCase(repository),
+        setCrashReportingUser: SetCrashReportingUserUseCase(crashReporting),
       );
       addTearDown(subscription.cancel);
       users

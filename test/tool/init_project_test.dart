@@ -86,11 +86,11 @@ Map<String, String> _template() => {
   '.firebaserc': '"dev": "your-firebase-project-dev"',
   'config/dev.json': 'https://your-firebase-project.web.app/privacy',
   'config/prod.json': 'https://your-firebase-project.web.app/privacy',
-  'docs/guides/setup.md': '`flutter_starter` `your-firebase-project`',
+  'doc/guide/setup.md': '`flutter_starter` `your-firebase-project`',
   _mainActivityPath: 'package com.yourcompany.flutterstarter\n',
   'lib/main.dart': "import 'package:flutter_starter/app/bootstrap.dart';\n",
   'lib/plain.dart': 'class Plain {}\n',
-  'lib/app/firebase/firebase_options_dev.dart': 'never read',
+  'lib/app/config/firebase/firebase_options_dev.dart': 'never read',
   'tool/init_project.dart': "const a = 'package:flutter_starter/';\n",
   'test/tool/init_project_test.dart': "const a = 'package:flutter_starter';\n",
 };
@@ -105,7 +105,7 @@ List<FileChange> _plan(Map<String, String> files) {
     },
     trackedDartFiles: files.keys.where((path) => path.endsWith('.dart')),
   );
-  expect(readPaths, isNot(contains(startsWith('lib/app/firebase/'))));
+  expect(readPaths, isNot(contains(startsWith('lib/app/config/firebase/'))));
   return changes;
 }
 
@@ -288,7 +288,7 @@ dependencies:
           '.firebaserc',
           'config/dev.json',
           'config/prod.json',
-          'docs/guides/setup.md',
+          'doc/guide/setup.md',
           _mainActivityPath,
           'lib/main.dart',
         ]),
@@ -314,7 +314,7 @@ dependencies:
       expect(paths, isNot(contains('test/tool/init_project_test.dart')));
       expect(
         paths,
-        isNot(contains('lib/app/firebase/firebase_options_dev.dart')),
+        isNot(contains('lib/app/config/firebase/firebase_options_dev.dart')),
       );
     });
 

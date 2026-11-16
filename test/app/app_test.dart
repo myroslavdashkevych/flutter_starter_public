@@ -1,36 +1,45 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+
 import 'package:flutter_starter/app/app.dart';
 import 'package:flutter_starter/app/config/app_config.dart';
 import 'package:flutter_starter/app/config/app_info.dart';
 import 'package:flutter_starter/app/config/flavor.dart';
 import 'package:flutter_starter/app/di/injection.dart';
 import 'package:flutter_starter/app/router/app_router.dart';
-import 'package:flutter_starter/domain/_shared/failure.dart';
-import 'package:flutter_starter/domain/_shared/result.dart';
-import 'package:flutter_starter/domain/_shared/services/analytics_service.dart';
-import 'package:flutter_starter/domain/auth/repositories/auth_repository.dart';
-import 'package:flutter_starter/domain/auth/usecases/delete_account_use_case.dart';
-import 'package:flutter_starter/domain/settings/entities/app_settings.dart';
-import 'package:flutter_starter/domain/items/usecases/get_item_details_use_case.dart';
-import 'package:flutter_starter/domain/items/usecases/get_items_page_use_case.dart';
+import 'package:flutter_starter/domain/_shared/wrapper/result/failure.dart';
+import 'package:flutter_starter/domain/_shared/wrapper/result/result.dart';
+import 'package:flutter_starter/domain/entity/app_settings.dart';
+import 'package:flutter_starter/domain/repository/auth_repository.dart';
+import 'package:flutter_starter/domain/use_case/auth/delete_account_use_case.dart';
+import 'package:flutter_starter/domain/use_case/auth/sign_out_use_case.dart';
+import 'package:flutter_starter/domain/use_case/auth/watch_auth_state_use_case.dart';
+import 'package:flutter_starter/domain/use_case/character/get_character_detail_use_case.dart';
+import 'package:flutter_starter/domain/use_case/character/get_character_page_use_case.dart';
+import 'package:flutter_starter/domain/use_case/character/track_character_opened_use_case.dart';
+import 'package:flutter_starter/domain/use_case/character/track_search_use_case.dart';
+import 'package:flutter_starter/domain/use_case/observability/track_screen_view_use_case.dart';
+import 'package:flutter_starter/domain/use_case/settings/load_settings_use_case.dart';
+import 'package:flutter_starter/domain/use_case/settings/save_settings_use_case.dart';
 import 'package:flutter_starter/presentation/auth/bloc/auth_bloc.dart';
-import 'package:flutter_starter/presentation/item_details/bloc/item_details_cubit.dart';
-import 'package:flutter_starter/presentation/items_list/bloc/items_list_bloc.dart';
-import 'package:flutter_starter/presentation/profile/bloc/profile_cubit.dart';
-import 'package:flutter_starter/presentation/settings/bloc/settings_cubit.dart';
+import 'package:flutter_starter/presentation/character_detail/bloc/character_detail_bloc.dart';
+import 'package:flutter_starter/presentation/character_list/bloc/character_list_bloc.dart';
+import 'package:flutter_starter/presentation/profile/bloc/profile_bloc.dart';
+import 'package:flutter_starter/presentation/settings/bloc/settings_bloc.dart';
+import 'package:flutter_starter/presentation/settings/bloc/settings_event.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../helpers/auth_fixtures.dart';
-import '../helpers/fake_analytics_service.dart';
-import '../helpers/fake_favorites_repository.dart';
-import '../helpers/items_fixtures.dart';
-import '../helpers/mocks.dart';
+import '../helper/auth_fixture.dart';
+import '../helper/character_fixture.dart';
+import '../helper/fake_analytics_service.dart';
+import '../helper/fake_favorite_repository.dart';
+import '../helper/mock.dart';
 
 void main() {
   late MockSettingsRepository repository;
-  late SettingsCubit cubit;
+  late SettingsBloc settingsBloc;
   late AuthBloc authBloc;
   late GoRouter router;
 
@@ -42,59 +51,70 @@ void main() {
       ..registerSingleton(
         const AppConfig(
           flavor: Flavor.dev,
-          itemsApiBaseUrl: 'https://items.invalid',
+          rickAndMortyApiBaseUrl: 'https://characters.invalid',
           backendBaseUrl: 'https://backend.invalid',
-          itemsCacheTtlMinutes: 30,
+          characterCacheTtlMinutes: 30,
           privacyPolicyUrl: 'https://privacy.invalid',
           usageDataSharingDefault: true,
         ),
       )
-      ..registerSingleton<AnalyticsService>(FakeAnalyticsService());
-    final itemsRepository = MockItemsRepository();
-    when(() => itemsRepository.getPage(page: 1))
+      ..registerSingleton(TrackScreenViewUseCase(FakeAnalyticsService()));
+    final characterRepository = MockCharacterRepository();
+    when(() => characterRepository.getPage(page: 1))
         .thenAnswer((_) async => Ok(testPage(1, ids: [1], hasMore: false)));
-    when(() => itemsRepository.getById(1))
-        .thenAnswer((_) async => Ok(testItem(1)));
+    when(() => characterRepository.getById(1))
+        .thenAnswer((_) async => Ok(testCharacter(1)));
     getIt
       ..registerFactory(
-        () => ItemsListBloc(
-          GetItemsPageUseCase(itemsRepository),
-          FakeAnalyticsService(),
+        () => CharacterListBloc(
+          GetCharacterPageUseCase(characterRepository),
+          TrackSearchUseCase(FakeAnalyticsService()),
         ),
       )
       ..registerFactory(
-        () => ItemDetailsCubit(
-          GetItemDetailsUseCase(itemsRepository),
-          FakeAnalyticsService(),
+        () => CharacterDetailBloc(
+          GetCharacterDetailUseCase(characterRepository),
+          TrackCharacterOpenedUseCase(FakeAnalyticsService()),
         ),
       );
     final AuthRepository authRepository = signedInAuthRepository();
-    final favoritesRepository = FakeFavoritesRepository();
+    final favoriteRepository = FakeFavoriteRepository();
     getIt.registerFactory(
-      () => ProfileCubit(
-        authRepository,
+      () => ProfileBloc(
+        WatchAuthStateUseCase(authRepository),
+        SignOutUseCase(authRepository),
         DeleteAccountUseCase(
           authRepository,
-          favoritesRepository,
+          favoriteRepository,
           FakeAnalyticsService(),
         ),
       ),
     );
-    registerFavoriteCubits(getIt, authRepository, favoritesRepository);
-    authBloc = AuthBloc(authRepository);
+    registerFavoriteBlocs(getIt, authRepository, favoriteRepository);
+    authBloc = AuthBloc(WatchAuthStateUseCase(authRepository));
     await authBloc.stream.first;
     repository = MockSettingsRepository();
     when(() => repository.save(any())).thenAnswer((_) async => const Ok(null));
-    cubit = SettingsCubit(repository);
     router = createAppRouter(authBloc);
   });
 
   tearDown(() async {
     router.dispose();
     await authBloc.close();
-    await cubit.close();
     await getIt.reset();
   });
+
+  // Made inside each test, so that the bloc handles its events in the fake
+  // time of the widget test. There the future of close() never completes, so
+  // it is not awaited.
+  SettingsBloc newSettingsBloc() {
+    final bloc = SettingsBloc(
+      LoadSettingsUseCase(repository),
+      SaveSettingsUseCase(repository),
+    );
+    addTearDown(() => unawaited(bloc.close()));
+    return bloc;
+  }
 
   Future<void> pumpApp(
     WidgetTester tester, {
@@ -102,7 +122,8 @@ void main() {
   }) async {
     tester.platformDispatcher.localesTestValue = deviceLocales;
     addTearDown(tester.platformDispatcher.clearLocalesTestValue);
-    await tester.pumpWidget(App(router: router, settingsCubit: cubit));
+    settingsBloc = newSettingsBloc();
+    await tester.pumpWidget(App(router: router, settingsBloc: settingsBloc));
     await tester.pumpAndSettle();
   }
 
@@ -126,7 +147,7 @@ void main() {
     ) async {
       await pumpApp(tester, deviceLocales: const [Locale('de')]);
 
-      expect(find.text('Item 1'), findsOneWidget);
+      expect(find.text('Character 1'), findsOneWidget);
     });
   });
 
@@ -134,14 +155,18 @@ void main() {
     tester,
   ) async {
     when(() => repository.load()).thenAnswer(
-      (_) async => const AppSettings(
-        themePreference: ThemePreference.dark,
-        localePreference: LocalePreference.uk,
+      (_) async => const Ok(
+        AppSettings(
+          themePreference: ThemePreference.dark,
+          localePreference: LocalePreference.uk,
+        ),
       ),
     );
-    await cubit.load();
+    settingsBloc = newSettingsBloc()..add(const SettingsLoadRequested());
+    await tester.pump();
+    expect(settingsBloc.state.isLoaded, isTrue);
 
-    await tester.pumpWidget(App(router: router, settingsCubit: cubit));
+    await tester.pumpWidget(App(router: router, settingsBloc: settingsBloc));
 
     expect(materialApp(tester).themeMode, ThemeMode.dark);
     expect(materialApp(tester).locale, const Locale('uk'));

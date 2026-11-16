@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter_starter/domain/_shared/services/crash_reporting_service.dart';
+import 'package:flutter_starter/domain/_shared/service/crash_reporting/crash_reporting_service.dart';
 import 'package:talker/talker.dart';
 
 /// Forwards what `talker.handle` catches as non-fatal reports.

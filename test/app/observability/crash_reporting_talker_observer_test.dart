@@ -2,7 +2,7 @@ import 'package:flutter_starter/app/observability/crash_reporting_talker_observe
 import 'package:flutter_test/flutter_test.dart';
 import 'package:talker/talker.dart';
 
-import '../../helpers/fake_crash_reporting_service.dart';
+import '../../helper/fake_crash_reporting_service.dart';
 
 void main() {
   late FakeCrashReportingService crashReporting;

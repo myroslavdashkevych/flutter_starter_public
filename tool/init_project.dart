@@ -1,4 +1,4 @@
-// Turns a fresh copy of the starter into a new project (docs/guides/new-project.md).
+// Turns a fresh copy of the starter into a new project (doc/guide/new-project.md).
 //
 // Usage: fvm dart run tool/init_project.dart --name "My App" --package my_app \
 //   --org com.example --firebase-prefix my-app-demo [--dry-run]
@@ -20,7 +20,7 @@ const _renameExcluded = {
 };
 
 /// Firebase config directory: never opened, see CLAUDE.md.
-const _firebaseOptionsDir = 'lib/app/firebase/';
+const _firebaseOptionsDir = 'lib/app/config/firebase/';
 
 const _usage = '''
 Usage: fvm dart run tool/init_project.dart --name "My App" --package my_app --org com.example --firebase-prefix my-app-demo [--dry-run]
@@ -259,7 +259,7 @@ List<FileChange> planChanges({
     '.firebaserc': renameFirebaseIds,
     'config/dev.json': renameFirebaseIds,
     'config/prod.json': renameFirebaseIds,
-    'docs/guides/setup.md': renameSetupDoc,
+    'doc/guide/setup.md': renameSetupDoc,
   };
 
   final changes = <FileChange>[];
@@ -317,7 +317,7 @@ WARNING: the starter ships without Firebase configs. Generate them (step 2 below
 otherwise the app does not build or start:
   - android/app/src/{dev,prod}/google-services.json
   - ios/flavors/{dev,prod}/GoogleService-Info.plist
-  - lib/app/firebase/firebase_options_{dev,prod}.dart (placeholders until then)
+  - lib/app/config/firebase/firebase_options_{dev,prod}.dart (placeholders until then)
   - firebase.json (flutter section; iOS builds read it to upload Crashlytics symbols)''';
 
 String _flutterfireCommand({
@@ -331,7 +331,7 @@ flutterfire configure \\
   --yes \\
   --project=$project \\
   --platforms=android,ios \\
-  --out=lib/app/firebase/firebase_options_$flavor.dart \\
+  --out=lib/app/config/firebase/firebase_options_$flavor.dart \\
   --android-package-name=$appId \\
   --android-out=android/app/src/$flavor/google-services.json \\
   --ios-bundle-id=$appId \\
@@ -360,7 +360,7 @@ String checklist(ProjectIds ids) =>
     '''
 Next steps
 
-1. Create two Firebase projects with these IDs (docs/guides/setup.md, Firebase):
+1. Create two Firebase projects with these IDs (doc/guide/setup.md, Firebase):
    dev:  ${ids.firebaseDev}
    prod: ${ids.firebaseProd}
 
@@ -379,7 +379,7 @@ fvm dart run tool/check_imports.dart
 fvm flutter test
 fvm flutter run --flavor dev --dart-define-from-file=config/dev.json
 
-4. Replace what this script leaves alone (docs/guides/new-project.md,
+4. Replace what this script leaves alone (doc/guide/new-project.md,
    "Replace the starter's content", including the spec):
    - launcher icons: assets/icons, then `fvm dart run flutter_launcher_icons`;
    - splash logo and colors, then `fvm dart run flutter_native_splash:create`;
@@ -388,9 +388,9 @@ fvm flutter run --flavor dev --dart-define-from-file=config/dev.json
    - README.md and CLAUDE.md: the project name and description.
 
 5. Remove the demo blocks and the optional blocks you do not need
-   (docs/guides/new-project.md, "Demo and optional blocks").
+   (doc/guide/new-project.md, "Demo and optional blocks").
 
-6. Before submitting to the stores, follow docs/guides/store-release.md.''';
+6. Before submitting to the stores, follow doc/guide/store-release.md.''';
 
 List<String> _git(List<String> args) {
   final result = Process.runSync('git', args);

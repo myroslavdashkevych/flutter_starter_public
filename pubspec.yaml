@@ -23,20 +23,21 @@ environment:
   sdk: ^3.13.5
 
 # Each line says what a package is for. Why it was chosen and its alternatives:
-# docs/spec/tech-stack.md. Which layer may import it:
-# docs/spec/architecture.md, External packages.
+# doc/spec/tech-stack.md. Which layer may import it:
+# doc/spec/architecture.md, External packages.
 # Any change here needs explicit approval (CLAUDE.md).
 dependencies:
   # --- Flutter SDK ---
   flutter:
     sdk: flutter
-  flutter_localizations:                # Material and Cupertino translations
+  flutter_localizations:                # gen-l10n; legacy Material translations
     sdk: flutter
   intl: any                             # Formatting; version set by the SDK
 
   # --- State management ---
-  flutter_bloc: ^9.1.1                  # BLoC and Cubit for screen state
-  stream_transform: ^2.1.2              # debounce and switchMap for BLoC events
+  flutter_bloc: ^9.1.1                  # Blocs for screen state
+  bloc_concurrency: ^0.3.0              # sequential, droppable, restartable transformers
+  stream_transform: ^2.1.2              # search transformer; switchMap, startWith in domain use cases
 
   # --- Dependency injection ---
   get_it: ^9.3.0                        # DI container, used only in app/
@@ -61,7 +62,7 @@ dependencies:
   # --- Logging (all talker packages share one version; upgrade them together) ---
   talker: ^5.2.0                        # Logging and error handling
   talker_flutter: ^5.2.0                # In-app log screen
-  talker_bloc_logger: ^5.2.0            # Logs BLoC events and state changes
+  talker_bloc_logger: ^5.2.0            # Logs Bloc events and state changes
   talker_dio_logger: ^5.2.0             # Logs HTTP requests without auth headers
 
   # --- Firebase (FlutterFire is released together; upgrade all five at once) ---
@@ -79,6 +80,7 @@ dependencies:
   url_launcher: ^6.3.3                  # Opens links in the in-app browser
 
   # --- UI ---
+  material_ui: ^1.11.0                  # Material widgets and theme (moved out of the SDK)
   cached_network_image_ce: ^4.13.1      # Network images with a disk cache
 
 dev_dependencies:
@@ -86,17 +88,15 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   mocktail: ^1.0.5                      # Mocks without code generation
-  bloc_test: ^10.0.0                    # BLoC and Cubit state transition tests
+  bloc_test: ^10.0.0                    # Bloc state transition tests
 
   # --- Lints (fvm flutter analyze) ---
   flutter_lints: ^6.0.0                 # Base lints, extended in analysis_options
 
   # --- Code generation (fvm dart run build_runner build) ---
   # TODO: held below 2.17 by pub until injectable_generator supports build 5
-  # (docs/spec/tech-stack.md, Compatibility notes).
+  # (doc/spec/tech-stack.md, Compatibility notes).
   build_runner: ^2.16.0                 # Runs all generators below
-  # TODO: held at 4.0.1 by pub; 4.0.2+ needs analyzer 14, which the Flutter SDK's
-  # test_api pin blocks (docs/spec/tech-stack.md, Compatibility notes).
   freezed: ^4.0.1                       # Generates freezed classes
   json_serializable: ^6.15.2            # Generates fromJson and toJson
   injectable_generator: ^3.1.3          # Generates DI registration

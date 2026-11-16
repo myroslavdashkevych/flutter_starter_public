@@ -1,39 +1,44 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_starter/app/config/app_config.dart';
 import 'package:flutter_starter/app/config/app_info.dart';
 import 'package:flutter_starter/app/config/flavor.dart';
 import 'package:flutter_starter/app/di/injection.dart';
-import 'package:flutter_starter/app/links/open_link.dart';
+import 'package:flutter_starter/app/link/open_link.dart';
 import 'package:flutter_starter/app/router/screen_view_observer.dart';
-import 'package:flutter_starter/domain/_shared/services/analytics_service.dart';
-import 'package:flutter_starter/domain/items/entities/item.dart';
-import 'package:flutter_starter/domain/notifications/usecases/request_notification_permission_use_case.dart';
-import 'package:flutter_starter/presentation/_shared/bloc/favorite/favorite_toggle_cubit.dart';
+import 'package:flutter_starter/domain/_shared/wrapper/result/result.dart';
+import 'package:flutter_starter/domain/entity/character.dart';
+import 'package:flutter_starter/domain/use_case/notification/request_notification_permission_use_case.dart';
+import 'package:flutter_starter/domain/use_case/notification/should_ask_notification_permission_use_case.dart';
+import 'package:flutter_starter/domain/use_case/observability/track_screen_view_use_case.dart';
+import 'package:flutter_starter/presentation/_shared/component/favorite_toggle/bloc/favorite_toggle_bloc.dart';
+import 'package:flutter_starter/presentation/_shared/component/favorite_toggle/bloc/favorite_toggle_event.dart';
+import 'package:flutter_starter/presentation/_shared/component/favorite_toggle/widget/favorite_toggle.dart';
 import 'package:flutter_starter/presentation/_shared/l10n/l10n_extension.dart';
-import 'package:flutter_starter/presentation/_shared/widgets/button/favorite_toggle.dart';
-import 'package:flutter_starter/presentation/_shared/widgets/dialog/notification_permission_dialog.dart';
-import 'package:flutter_starter/presentation/auth/bloc/reset_password_cubit.dart';
-import 'package:flutter_starter/presentation/auth/bloc/sign_in_cubit.dart';
-import 'package:flutter_starter/presentation/auth/bloc/sign_up_cubit.dart';
-import 'package:flutter_starter/presentation/auth/pages/reset_password_page.dart';
-import 'package:flutter_starter/presentation/auth/pages/sign_in_page.dart';
-import 'package:flutter_starter/presentation/auth/pages/sign_up_page.dart';
-import 'package:flutter_starter/presentation/favorites/bloc/favorites_cubit.dart';
-import 'package:flutter_starter/presentation/favorites/pages/favorites_page.dart';
-import 'package:flutter_starter/presentation/favorites/widgets/remove_favorite_button.dart';
-import 'package:flutter_starter/presentation/home_shell/pages/home_shell_page.dart';
-import 'package:flutter_starter/presentation/item_details/bloc/item_details_cubit.dart';
-import 'package:flutter_starter/presentation/item_details/pages/item_details_page.dart';
-import 'package:flutter_starter/presentation/items_list/bloc/items_list_bloc.dart';
-import 'package:flutter_starter/presentation/items_list/bloc/items_list_event.dart';
-import 'package:flutter_starter/presentation/items_list/pages/items_list_page.dart';
-import 'package:flutter_starter/presentation/profile/bloc/profile_cubit.dart';
-import 'package:flutter_starter/presentation/profile/pages/profile_page.dart';
-import 'package:flutter_starter/presentation/settings/pages/settings_page.dart';
+import 'package:flutter_starter/presentation/_shared/widget/dialog/notification_permission_dialog.dart';
+import 'package:flutter_starter/presentation/auth/bloc/reset_password_bloc.dart';
+import 'package:flutter_starter/presentation/auth/bloc/sign_in_bloc.dart';
+import 'package:flutter_starter/presentation/auth/bloc/sign_up_bloc.dart';
+import 'package:flutter_starter/presentation/auth/page/reset_password_page.dart';
+import 'package:flutter_starter/presentation/auth/page/sign_in_page.dart';
+import 'package:flutter_starter/presentation/auth/page/sign_up_page.dart';
+import 'package:flutter_starter/presentation/character_detail/bloc/character_detail_bloc.dart';
+import 'package:flutter_starter/presentation/character_detail/bloc/character_detail_event.dart';
+import 'package:flutter_starter/presentation/character_detail/bloc/character_detail_state.dart';
+import 'package:flutter_starter/presentation/character_detail/page/character_detail_page.dart';
+import 'package:flutter_starter/presentation/character_list/bloc/character_list_bloc.dart';
+import 'package:flutter_starter/presentation/character_list/bloc/character_list_event.dart';
+import 'package:flutter_starter/presentation/character_list/page/character_list_page.dart';
+import 'package:flutter_starter/presentation/favorite_list/bloc/favorite_list_bloc.dart';
+import 'package:flutter_starter/presentation/favorite_list/page/favorite_list_page.dart';
+import 'package:flutter_starter/presentation/favorite_list/widget/remove_favorite_button.dart';
+import 'package:flutter_starter/presentation/home_shell/page/home_shell_page.dart';
+import 'package:flutter_starter/presentation/profile/bloc/profile_bloc.dart';
+import 'package:flutter_starter/presentation/profile/page/profile_page.dart';
+import 'package:flutter_starter/presentation/settings/page/settings_page.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
 part 'routes.g.dart';
@@ -43,11 +48,11 @@ abstract final class _ScreenNames {
   static const signIn = 'sign_in';
   static const signUp = 'sign_up';
   static const resetPassword = 'reset_password';
-  static const items = 'items';
-  static const itemDetails = 'item_details';
+  static const characterList = 'character_list';
+  static const characterDetail = 'character_detail';
   static const profile = 'profile';
-  static const favorites = 'favorites';
-  static const favoriteDetails = 'favorite_details';
+  static const favoriteList = 'favorite_list';
+  static const favoriteDetail = 'favorite_detail';
   static const settings = 'settings';
   static const logs = 'logs';
 }
@@ -56,14 +61,18 @@ String? _lastScreen;
 
 void _logScreenView(String name) {
   _lastScreen = name;
-  unawaited(getIt<AnalyticsService>().logScreenView(name));
+  unawaited(getIt<TrackScreenViewUseCase>()((name: name)));
 }
 
 // A navigator needs its own observer, so each branch has one.
-final _itemsObserver = ScreenViewObserver(_logScreenView);
+final _characterListObserver = ScreenViewObserver(_logScreenView);
 final _profileObserver = ScreenViewObserver(_logScreenView);
 final _settingsObserver = ScreenViewObserver(_logScreenView);
-final _branchObservers = [_itemsObserver, _profileObserver, _settingsObserver];
+final _branchObservers = [
+  _characterListObserver,
+  _profileObserver,
+  _settingsObserver,
+];
 var _currentBranch = 0;
 
 /// Closing an auth page returns to the shell, whose route has no name: the
@@ -79,17 +88,51 @@ final rootScreenViewObserver = ScreenViewObserver(
 
 Never _throwTestCrash() => throw StateError('Test crash from the dev settings');
 
-/// The moment to ask about notifications: the first opened item, for guests and
-/// signed-in users alike. A new app replaces only this trigger.
-void _askForNotificationPermission(BuildContext context) => unawaited(
-  getIt<RequestNotificationPermissionUseCase>()(
-    askUser: () => showNotificationPermissionDialog(context),
-  ),
-);
+/// The moment to ask about notifications: the first opened character, for guests and
+/// signed-in users alike. A new app replaces only this trigger. A dialog that
+/// could not be shown (null) leaves the flag unset, so the user is asked again.
+Future<void> _askForNotificationPermission(BuildContext context) async {
+  final shouldAsk = await getIt<ShouldAskNotificationPermissionUseCase>()(());
+  if (shouldAsk case Ok(value: false) || Err()) return;
+  if (!context.mounted) return;
+  final agreed = await showNotificationPermissionDialog(context);
+  if (agreed == null) return;
+  await getIt<RequestNotificationPermissionUseCase>()((agreed: agreed));
+}
 
-Widget _favoriteToggle(Item item) => BlocProvider(
-  create: (_) => getIt<FavoriteToggleCubit>()..watch(item.id),
-  child: FavoriteToggle(item: item),
+/// Asks about notifications when the opened character loads, not after a failure or
+/// a retry (NTF-1). A widget, so the flag survives a rebuild of the route.
+class _AskOnFirstLoad extends StatefulWidget {
+  const _AskOnFirstLoad({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_AskOnFirstLoad> createState() => _AskOnFirstLoadState();
+}
+
+class _AskOnFirstLoadState extends State<_AskOnFirstLoad> {
+  var _settled = false;
+
+  @override
+  Widget build(BuildContext context) =>
+      BlocListener<CharacterDetailBloc, CharacterDetailState>(
+        listenWhen: (_, current) =>
+            !_settled && current is! CharacterDetailLoading,
+        listener: (context, state) {
+          _settled = true;
+          if (state is CharacterDetailLoaded) {
+            unawaited(_askForNotificationPermission(context));
+          }
+        },
+        child: widget.child,
+      );
+}
+
+Widget _favoriteToggle(Character character) => BlocProvider(
+  create: (_) =>
+      getIt<FavoriteToggleBloc>()..add(FavoriteToggleStarted(character.id)),
+  child: FavoriteToggle(character: character),
 );
 
 @TypedGoRoute<SignInRoute>(path: '/sign-in', name: _ScreenNames.signIn)
@@ -98,7 +141,7 @@ class SignInRoute extends GoRouteData with $SignInRoute {
 
   @override
   Widget build(BuildContext context, GoRouterState state) => BlocProvider(
-    create: (_) => getIt<SignInCubit>(),
+    create: (_) => getIt<SignInBloc>(),
     child: SignInPage(
       onSignUp: () => const SignUpRoute().push<void>(context),
       onResetPassword: () => const ResetPasswordRoute().push<void>(context),
@@ -113,7 +156,7 @@ class SignUpRoute extends GoRouteData with $SignUpRoute {
 
   @override
   Widget build(BuildContext context, GoRouterState state) => BlocProvider(
-    create: (_) => getIt<SignUpCubit>(),
+    create: (_) => getIt<SignUpBloc>(),
     child: SignUpPage(
       onSignIn: () => context.pop(),
       onSuccess: () => const ProfileRoute().go(context),
@@ -130,22 +173,22 @@ class ResetPasswordRoute extends GoRouteData with $ResetPasswordRoute {
 
   @override
   Widget build(BuildContext context, GoRouterState state) => BlocProvider(
-    create: (_) => getIt<ResetPasswordCubit>(),
+    create: (_) => getIt<ResetPasswordBloc>(),
     child: ResetPasswordPage(onSignIn: () => context.pop()),
   );
 }
 
 @TypedStatefulShellRoute<HomeShellRoute>(
   branches: [
-    TypedStatefulShellBranch<ItemsBranch>(
+    TypedStatefulShellBranch<CharacterListBranch>(
       routes: [
-        TypedGoRoute<ItemsRoute>(
-          path: '/items',
-          name: _ScreenNames.items,
+        TypedGoRoute<CharacterListRoute>(
+          path: '/character-list',
+          name: _ScreenNames.characterList,
           routes: [
-            TypedGoRoute<ItemDetailsRoute>(
+            TypedGoRoute<CharacterDetailRoute>(
               path: ':id',
-              name: _ScreenNames.itemDetails,
+              name: _ScreenNames.characterDetail,
             ),
           ],
         ),
@@ -157,13 +200,13 @@ class ResetPasswordRoute extends GoRouteData with $ResetPasswordRoute {
           path: '/profile',
           name: _ScreenNames.profile,
           routes: [
-            TypedGoRoute<FavoritesRoute>(
-              path: 'favorites',
-              name: _ScreenNames.favorites,
+            TypedGoRoute<FavoriteListRoute>(
+              path: 'favorite-list',
+              name: _ScreenNames.favoriteList,
               routes: [
-                TypedGoRoute<FavoriteDetailsRoute>(
+                TypedGoRoute<FavoriteDetailRoute>(
                   path: ':id',
-                  name: _ScreenNames.favoriteDetails,
+                  name: _ScreenNames.favoriteDetail,
                 ),
               ],
             ),
@@ -209,10 +252,10 @@ class HomeShellRoute extends StatefulShellRouteData {
   }
 }
 
-class ItemsBranch extends StatefulShellBranchData {
-  const ItemsBranch();
+class CharacterListBranch extends StatefulShellBranchData {
+  const CharacterListBranch();
 
-  static final List<NavigatorObserver> $observers = [_itemsObserver];
+  static final List<NavigatorObserver> $observers = [_characterListObserver];
 }
 
 class ProfileBranch extends StatefulShellBranchData {
@@ -227,30 +270,34 @@ class SettingsBranch extends StatefulShellBranchData {
   static final List<NavigatorObserver> $observers = [_settingsObserver];
 }
 
-class ItemsRoute extends GoRouteData with $ItemsRoute {
-  const ItemsRoute();
+class CharacterListRoute extends GoRouteData with $CharacterListRoute {
+  const CharacterListRoute();
 
   @override
   Widget build(BuildContext context, GoRouterState state) => BlocProvider(
-    create: (_) => getIt<ItemsListBloc>()..add(const ItemsListLoadRequested()),
-    child: ItemsListPage(
-      onItemSelected: (id) => ItemDetailsRoute(id: id).go(context),
+    create: (_) =>
+        getIt<CharacterListBloc>()..add(const CharacterListLoadRequested()),
+    child: CharacterListPage(
+      onCharacterSelected: (id) => CharacterDetailRoute(id: id).go(context),
       favoriteToggleBuilder: _favoriteToggle,
     ),
   );
 }
 
-class ItemDetailsRoute extends GoRouteData with $ItemDetailsRoute {
-  const ItemDetailsRoute({required this.id});
+class CharacterDetailRoute extends GoRouteData with $CharacterDetailRoute {
+  const CharacterDetailRoute({required this.id});
 
   final int id;
 
   @override
   Widget build(BuildContext context, GoRouterState state) => BlocProvider(
-    create: (_) =>
-        getIt<ItemDetailsCubit>()
-          ..open(id, onLoaded: () => _askForNotificationPermission(context)),
-    child: ItemDetailsPage(id: id, favoriteToggleBuilder: _favoriteToggle),
+    create: (_) => getIt<CharacterDetailBloc>()..add(CharacterDetailOpened(id)),
+    child: _AskOnFirstLoad(
+      child: CharacterDetailPage(
+        id: id,
+        favoriteToggleBuilder: _favoriteToggle,
+      ),
+    ),
   );
 }
 
@@ -259,44 +306,44 @@ class ProfileRoute extends GoRouteData with $ProfileRoute {
 
   @override
   Widget build(BuildContext context, GoRouterState state) => BlocProvider(
-    create: (_) => getIt<ProfileCubit>(),
+    create: (_) => getIt<ProfileBloc>(),
     child: ProfilePage(
       onSignIn: () => const SignInRoute().push<void>(context),
-      onFavorites: () => const FavoritesRoute().go(context),
+      onFavorites: () => const FavoriteListRoute().go(context),
     ),
   );
 }
 
-class FavoritesRoute extends GoRouteData with $FavoritesRoute {
-  const FavoritesRoute();
+class FavoriteListRoute extends GoRouteData with $FavoriteListRoute {
+  const FavoriteListRoute();
 
   @override
   Widget build(BuildContext context, GoRouterState state) => BlocProvider(
-    create: (_) => getIt<FavoritesCubit>(),
-    child: FavoritesPage(
+    create: (_) => getIt<FavoriteListBloc>(),
+    child: FavoriteListPage(
       onSignIn: () => const SignInRoute().push<void>(context),
-      onItemSelected: (id) => FavoriteDetailsRoute(id: id).go(context),
+      onCharacterSelected: (id) => FavoriteDetailRoute(id: id).go(context),
       favoriteToggleBuilder: _favoriteToggle,
     ),
   );
 }
 
-class FavoriteDetailsRoute extends GoRouteData with $FavoriteDetailsRoute {
-  const FavoriteDetailsRoute({required this.id});
+class FavoriteDetailRoute extends GoRouteData with $FavoriteDetailRoute {
+  const FavoriteDetailRoute({required this.id});
 
   final int id;
 
   @override
   Widget build(BuildContext context, GoRouterState state) => BlocProvider(
-    create: (_) =>
-        getIt<ItemDetailsCubit>()
-          ..open(id, onLoaded: () => _askForNotificationPermission(context)),
-    child: ItemDetailsPage(
-      id: id,
-      favoriteToggleBuilder: _favoriteToggle,
-      notFoundActionBuilder: (_) => BlocProvider(
-        create: (_) => getIt<FavoritesCubit>(),
-        child: RemoveFavoriteButton(id: id, onRemoved: () => context.pop()),
+    create: (_) => getIt<CharacterDetailBloc>()..add(CharacterDetailOpened(id)),
+    child: _AskOnFirstLoad(
+      child: CharacterDetailPage(
+        id: id,
+        favoriteToggleBuilder: _favoriteToggle,
+        notFoundActionBuilder: (_) => BlocProvider(
+          create: (_) => getIt<FavoriteListBloc>(),
+          child: RemoveFavoriteButton(id: id, onRemoved: () => context.pop()),
+        ),
       ),
     ),
   );

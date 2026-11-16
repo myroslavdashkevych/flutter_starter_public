@@ -13,8 +13,8 @@ void main() {
       'android/app/src/dev/google-services.json',
       'google-services.json',
       'ios/config/dev/GoogleService-Info.plist',
-      'lib/app/firebase/firebase_options_dev.dart',
-      'lib/app/firebase/firebase_options.dart',
+      'lib/app/config/firebase/firebase_options_dev.dart',
+      'lib/app/config/firebase/firebase_options.dart',
       '.env',
       '.env.example',
       'config/.env.prod',
@@ -45,23 +45,23 @@ void main() {
     }
 
     for (final path in [
-      'lib/app/firebase/firebase_setup.dart',
-      'lib/app/firebase/options.dart',
-      'docs/google-services.md',
+      'lib/app/config/firebase/firebase_setup.dart',
+      'lib/app/config/firebase/options.dart',
+      'doc/google-services.md',
       'google-services.json.md',
       'lib/app/env/config.dart',
       'lib/environment.dart',
       'key.properties.example',
       'android/app/build.gradle.kts',
-      'docs/keystore.md',
+      'doc/keystore.md',
       'certs/pem_notes.txt',
       'lib/data/service_account.dart',
-      'docs/service-account.md',
+      'doc/service-account.md',
       'ssh/config',
-      'docs/ssh.md',
-      'docs/id_rsa.md',
+      'doc/ssh.md',
+      'doc/id_rsa.md',
       'lib/id_rsa_parser.dart',
-      'docs/p8-keys.md',
+      'doc/p8-keys.md',
       'lib/valid_id.dart',
       'config/dev.json',
       'pubspec.yaml',
@@ -75,23 +75,23 @@ void main() {
       expect(parseArgs(['files']).refs, isEmpty);
       expect(parseArgs(['files', 'main', 'HEAD']).refs, ['main', 'HEAD']);
       expect(parseArgs(['log', 'develop']).mode, Mode.log);
-      final diff = parseArgs(['diff', 'abc123', '--', 'lib', 'docs/a.md']);
+      final diff = parseArgs(['diff', 'abc123', '--', 'lib', 'doc/a.md']);
       expect(diff.refs, ['abc123']);
-      expect(diff.paths, ['lib', 'docs/a.md']);
+      expect(diff.paths, ['lib', 'doc/a.md']);
       final show = parseArgs(['show', 'HEAD~2', 'lib/main.dart']);
       expect(show.refs, ['HEAD~2']);
       expect(show.paths, ['lib/main.dart']);
-      final search = parseArgs(['search', 'ADR-015', 'HEAD', '--', 'docs']);
+      final search = parseArgs(['search', 'ADR-015', 'HEAD', '--', 'doc']);
       expect(search.text, 'ADR-015');
       expect(search.refs, ['HEAD']);
-      expect(search.paths, ['docs']);
+      expect(search.paths, ['doc']);
       expect(parseArgs(['search', 'a.b']).refs, isEmpty);
     });
 
     test('show accepts a path that is not a valid ref', () {
       for (final path in [
         'assets/icon@2x.png',
-        'docs/a b.md',
+        'doc/a b.md',
         'x/(y)+[z].txt',
       ]) {
         expect(parseArgs(['show', 'HEAD', path]).paths, [path]);
@@ -186,7 +186,10 @@ void main() {
       git(['branch', 'develop']);
       writeFile('a.txt', 'two\n');
       writeFile('android/app/google-services.json', '$_secret 2\n');
-      writeFile('lib/app/firebase/firebase_options_dev.dart', '$_secret 3\n');
+      writeFile(
+        'lib/app/config/firebase/firebase_options_dev.dart',
+        '$_secret 3\n',
+      );
       git(['add', '.']);
       git(['commit', '-q', '-m', 'second commit']);
       writeFile('a.txt', 'three\n');
@@ -209,7 +212,7 @@ void main() {
       expect(
         out,
         contains(
-          'skipped (never read): lib/app/firebase/firebase_options_dev.dart',
+          'skipped (never read): lib/app/config/firebase/firebase_options_dev.dart',
         ),
       );
       expect(out, contains('skipped (never read): .env'));
@@ -257,10 +260,10 @@ void main() {
     });
 
     test('diff of a path without changes says so', () {
-      final (code, out) = review(['diff', '--', 'docs']);
+      final (code, out) = review(['diff', '--', 'doc']);
 
       expect(code, 0);
-      expect(out, 'not changed: docs\n');
+      expect(out, 'not changed: doc\n');
     });
 
     test('log lists commits without patches', () {

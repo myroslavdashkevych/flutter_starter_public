@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 
 GoRouter createAppRouter(AuthBloc authBloc) => GoRouter(
   routes: $appRoutes,
-  initialLocation: const ItemsRoute().location,
+  initialLocation: const CharacterListRoute().location,
   // FlutterActivity reads the `route` intent extra as the platform default route,
   // and FCM copies `data.route` there. That would skip `isOpenableRoute`.
   overridePlatformDefaultLocation: true,

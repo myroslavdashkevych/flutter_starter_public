@@ -1,43 +1,52 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_starter/app/app.dart';
 import 'package:flutter_starter/app/config/app_config.dart';
 import 'package:flutter_starter/app/config/app_info.dart';
 import 'package:flutter_starter/app/config/flavor.dart';
 import 'package:flutter_starter/app/di/injection.dart';
 import 'package:flutter_starter/app/router/app_router.dart';
-import 'package:flutter_starter/domain/_shared/result.dart';
-import 'package:flutter_starter/domain/_shared/services/analytics_service.dart';
-import 'package:flutter_starter/domain/auth/repositories/auth_repository.dart';
-import 'package:flutter_starter/domain/auth/usecases/delete_account_use_case.dart';
-import 'package:flutter_starter/domain/items/usecases/get_item_details_use_case.dart';
-import 'package:flutter_starter/domain/items/usecases/get_items_page_use_case.dart';
-import 'package:flutter_starter/domain/notifications/usecases/request_notification_permission_use_case.dart';
+import 'package:flutter_starter/domain/_shared/wrapper/result/failure.dart';
+import 'package:flutter_starter/domain/_shared/wrapper/result/result.dart';
+import 'package:flutter_starter/domain/repository/auth_repository.dart';
+import 'package:flutter_starter/domain/use_case/auth/delete_account_use_case.dart';
+import 'package:flutter_starter/domain/use_case/auth/sign_out_use_case.dart';
+import 'package:flutter_starter/domain/use_case/auth/watch_auth_state_use_case.dart';
+import 'package:flutter_starter/domain/use_case/character/get_character_detail_use_case.dart';
+import 'package:flutter_starter/domain/use_case/character/get_character_page_use_case.dart';
+import 'package:flutter_starter/domain/use_case/character/track_character_opened_use_case.dart';
+import 'package:flutter_starter/domain/use_case/character/track_search_use_case.dart';
+import 'package:flutter_starter/domain/use_case/notification/request_notification_permission_use_case.dart';
+import 'package:flutter_starter/domain/use_case/notification/should_ask_notification_permission_use_case.dart';
+import 'package:flutter_starter/domain/use_case/observability/track_screen_view_use_case.dart';
+import 'package:flutter_starter/domain/use_case/settings/load_settings_use_case.dart';
+import 'package:flutter_starter/domain/use_case/settings/save_settings_use_case.dart';
 import 'package:flutter_starter/presentation/auth/bloc/auth_bloc.dart';
-import 'package:flutter_starter/presentation/item_details/bloc/item_details_cubit.dart';
-import 'package:flutter_starter/presentation/item_details/pages/item_details_page.dart';
-import 'package:flutter_starter/presentation/items_list/bloc/items_list_bloc.dart';
-import 'package:flutter_starter/presentation/profile/bloc/profile_cubit.dart';
-import 'package:flutter_starter/presentation/settings/bloc/settings_cubit.dart';
+import 'package:flutter_starter/presentation/character_detail/bloc/character_detail_bloc.dart';
+import 'package:flutter_starter/presentation/character_detail/page/character_detail_page.dart';
+import 'package:flutter_starter/presentation/character_list/bloc/character_list_bloc.dart';
+import 'package:flutter_starter/presentation/profile/bloc/profile_bloc.dart';
+import 'package:flutter_starter/presentation/settings/bloc/settings_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:talker/talker.dart';
 
-import '../../helpers/auth_fixtures.dart';
-import '../../helpers/fake_analytics_service.dart';
-import '../../helpers/fake_favorites_repository.dart';
-import '../../helpers/fake_notifications_repository.dart';
-import '../../helpers/items_fixtures.dart';
-import '../../helpers/mocks.dart';
+import '../../helper/auth_fixture.dart';
+import '../../helper/character_fixture.dart';
+import '../../helper/fake_analytics_service.dart';
+import '../../helper/fake_favorite_repository.dart';
+import '../../helper/fake_notification_repository.dart';
+import '../../helper/mock.dart';
 
 void main() {
   late FakeAnalyticsService analytics;
-  late SettingsCubit cubit;
+  late SettingsBloc settingsBloc;
+  late MockCharacterRepository characterRepository;
   late AuthBloc authBloc;
   late GoRouter router;
 
-  const openItem = 'Item 1';
-  final itemDetails = find.byType(ItemDetailsPage);
+  const openCharacter = 'Character 1';
+  final characterDetail = find.byType(CharacterDetailPage);
 
   setUpAll(registerFallbackValues);
 
@@ -47,69 +56,80 @@ void main() {
       ..registerSingleton(
         const AppConfig(
           flavor: Flavor.dev,
-          itemsApiBaseUrl: 'https://items.invalid',
+          rickAndMortyApiBaseUrl: 'https://characters.invalid',
           backendBaseUrl: 'https://backend.invalid',
-          itemsCacheTtlMinutes: 30,
+          characterCacheTtlMinutes: 30,
           privacyPolicyUrl: 'https://privacy.invalid',
           usageDataSharingDefault: true,
         ),
       )
-      ..registerSingleton<AnalyticsService>(analytics = FakeAnalyticsService())
+      ..registerSingleton(
+        TrackScreenViewUseCase(analytics = FakeAnalyticsService()),
+      )
       ..registerSingleton(Talker());
-    final itemsRepository = MockItemsRepository();
-    when(() => itemsRepository.getPage(page: 1))
+    characterRepository = MockCharacterRepository();
+    when(() => characterRepository.getPage(page: 1))
         .thenAnswer((_) async => Ok(testPage(1, ids: [1], hasMore: false)));
-    when(() => itemsRepository.getById(1))
-        .thenAnswer((_) async => Ok(testItem(1)));
+    when(() => characterRepository.getById(1))
+        .thenAnswer((_) async => Ok(testCharacter(1)));
     getIt
       ..registerFactory(
-        () => ItemsListBloc(
-          GetItemsPageUseCase(itemsRepository),
-          FakeAnalyticsService(),
+        () => CharacterListBloc(
+          GetCharacterPageUseCase(characterRepository),
+          TrackSearchUseCase(FakeAnalyticsService()),
         ),
       )
       ..registerFactory(
-        () => ItemDetailsCubit(
-          GetItemDetailsUseCase(itemsRepository),
-          FakeAnalyticsService(),
+        () => CharacterDetailBloc(
+          GetCharacterDetailUseCase(characterRepository),
+          TrackCharacterOpenedUseCase(FakeAnalyticsService()),
+        ),
+      )
+      ..registerFactory(
+        () => ShouldAskNotificationPermissionUseCase(
+          FakeNotificationRepository(),
         ),
       )
       ..registerFactory(
         () =>
-            RequestNotificationPermissionUseCase(FakeNotificationsRepository()),
+            RequestNotificationPermissionUseCase(FakeNotificationRepository()),
       );
     final AuthRepository authRepository = signedInAuthRepository();
-    final favoritesRepository = FakeFavoritesRepository();
+    final favoriteRepository = FakeFavoriteRepository();
     getIt.registerFactory(
-      () => ProfileCubit(
-        authRepository,
+      () => ProfileBloc(
+        WatchAuthStateUseCase(authRepository),
+        SignOutUseCase(authRepository),
         DeleteAccountUseCase(
           authRepository,
-          favoritesRepository,
+          favoriteRepository,
           FakeAnalyticsService(),
         ),
       ),
     );
-    registerFavoriteCubits(getIt, authRepository, favoritesRepository);
-    authBloc = AuthBloc(authRepository);
+    registerFavoriteBlocs(getIt, authRepository, favoriteRepository);
+    authBloc = AuthBloc(WatchAuthStateUseCase(authRepository));
     await authBloc.stream.first;
     final repository = MockSettingsRepository();
     when(() => repository.save(any())).thenAnswer((_) async => const Ok(null));
-    cubit = SettingsCubit(repository);
+    settingsBloc = SettingsBloc(
+      LoadSettingsUseCase(repository),
+      SaveSettingsUseCase(repository),
+    );
     router = createAppRouter(authBloc);
   });
 
   tearDown(() async {
     router.dispose();
     await authBloc.close();
-    await cubit.close();
+    await settingsBloc.close();
     await getIt.reset();
   });
 
   Future<void> pumpApp(WidgetTester tester) async {
     tester.platformDispatcher.localesTestValue = const [Locale('en')];
     addTearDown(tester.platformDispatcher.clearLocalesTestValue);
-    await tester.pumpWidget(App(router: router, settingsCubit: cubit));
+    await tester.pumpWidget(App(router: router, settingsBloc: settingsBloc));
     await tester.pumpAndSettle();
   }
 
@@ -118,18 +138,18 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Future<void> openFirstItem(WidgetTester tester) async {
-    await tester.tap(find.text(openItem));
+  Future<void> openFirstCharacter(WidgetTester tester) async {
+    await tester.tap(find.text(openCharacter));
     await tester.pumpAndSettle();
   }
 
   String location() => router.routerDelegate.currentConfiguration.uri.path;
 
-  testWidgets('NAV-1: starts on the items tab', (tester) async {
+  testWidgets('NAV-1: starts on the characters tab', (tester) async {
     await pumpApp(tester);
 
-    expect(location(), '/items');
-    expect(find.text(openItem), findsOneWidget);
+    expect(location(), '/character-list');
+    expect(find.text(openCharacter), findsOneWidget);
   });
 
   // FCM copies `data.route` to the launch intent, and FlutterActivity reads the
@@ -142,8 +162,8 @@ void main() {
 
     await pumpApp(tester);
 
-    expect(location(), '/items');
-    expect(find.text(openItem), findsOneWidget);
+    expect(location(), '/character-list');
+    expect(find.text(openCharacter), findsOneWidget);
   });
 
   testWidgets('every tab opens its page', (tester) async {
@@ -158,54 +178,80 @@ void main() {
     await tester.scrollUntilVisible(find.text('1.2.3 (4)'), 100);
     expect(find.text('1.2.3 (4)'), findsOneWidget);
 
-    await tapTab(tester, 'Items');
-    expect(location(), '/items');
+    await tapTab(tester, 'Characters');
+    expect(location(), '/character-list');
   });
 
-  testWidgets('ITM-1: an item opens by its id inside the items tab', (
+  testWidgets('CHR-1: a character opens by its id inside the characters tab', (
     tester,
   ) async {
     await pumpApp(tester);
 
-    await openFirstItem(tester);
+    await openFirstCharacter(tester);
 
-    expect(location(), '/items/1');
-    expect(itemDetails, findsOneWidget);
+    expect(location(), '/character-list/1');
+    expect(characterDetail, findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
   });
 
   group('notification permission', () {
-    late FakeNotificationsRepository notAsked;
+    late FakeNotificationRepository notAsked;
 
     setUp(() {
-      notAsked = FakeNotificationsRepository(asked: false);
+      notAsked = FakeNotificationRepository(asked: false);
       getIt
+        ..unregister<ShouldAskNotificationPermissionUseCase>()
         ..unregister<RequestNotificationPermissionUseCase>()
+        ..registerFactory(
+          () => ShouldAskNotificationPermissionUseCase(notAsked),
+        )
         ..registerFactory(() => RequestNotificationPermissionUseCase(notAsked));
     });
 
-    testWidgets('NTF-1, NTF-2, NTF-3: the first opened item asks; "Not now" '
-        'keeps the system request', (tester) async {
+    testWidgets(
+      'NTF-1, NTF-2, NTF-3: the first opened character asks; "Not now" '
+      'keeps the system request',
+      (tester) async {
+        await pumpApp(tester);
+        analytics.screens.clear();
+
+        await openFirstCharacter(tester);
+        expect(find.text('Turn on notifications?'), findsOneWidget);
+        expect(analytics.screens, ['character_detail']);
+
+        await tester.tap(find.text('Not now'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Turn on notifications?'), findsNothing);
+        expect(characterDetail, findsOneWidget);
+        expect(notAsked.permissionRequests, 0);
+        expect(notAsked.asked, isTrue);
+        expect(analytics.screens, ['character_detail']);
+      },
+    );
+
+    testWidgets('NTF-1: a failed load and its retry do not ask', (
+      tester,
+    ) async {
+      when(() => characterRepository.getById(1))
+          .thenAnswer((_) async => const Err(Failure.network()));
       await pumpApp(tester);
-      analytics.screens.clear();
+      await openFirstCharacter(tester);
+      expect(find.text('Turn on notifications?'), findsNothing);
 
-      await openFirstItem(tester);
-      expect(find.text('Turn on notifications?'), findsOneWidget);
-      expect(analytics.screens, ['item_details']);
-
-      await tester.tap(find.text('Not now'));
+      when(() => characterRepository.getById(1))
+          .thenAnswer((_) async => Ok(testCharacter(1)));
+      await tester.tap(find.text('Retry'));
       await tester.pumpAndSettle();
 
+      expect(find.text('Character 1'), findsWidgets);
       expect(find.text('Turn on notifications?'), findsNothing);
-      expect(itemDetails, findsOneWidget);
-      expect(notAsked.permissionRequests, 0);
-      expect(notAsked.asked, isTrue);
-      expect(analytics.screens, ['item_details']);
+      expect(notAsked.asked, isFalse);
     });
 
     testWidgets('NTF-2: "Allow" leads to the system request', (tester) async {
       await pumpApp(tester);
-      await openFirstItem(tester);
+      await openFirstCharacter(tester);
 
       await tester.tap(find.text('Allow'));
       await tester.pumpAndSettle();
@@ -213,17 +259,17 @@ void main() {
       expect(notAsked.permissionRequests, 1);
     });
 
-    testWidgets('NTF-2: the next opened item does not ask again', (
+    testWidgets('NTF-2: the next opened character does not ask again', (
       tester,
     ) async {
       await pumpApp(tester);
-      await openFirstItem(tester);
+      await openFirstCharacter(tester);
       await tester.tap(find.text('Not now'));
       await tester.pumpAndSettle();
       await tester.pageBack();
       await tester.pumpAndSettle();
 
-      await openFirstItem(tester);
+      await openFirstCharacter(tester);
 
       expect(find.text('Turn on notifications?'), findsNothing);
     });
@@ -231,59 +277,59 @@ void main() {
 
   testWidgets('NAV-3: a tab keeps its own stack', (tester) async {
     await pumpApp(tester);
-    await openFirstItem(tester);
+    await openFirstCharacter(tester);
 
     await tapTab(tester, 'Settings');
-    expect(itemDetails, findsNothing);
+    expect(characterDetail, findsNothing);
 
-    await tapTab(tester, 'Items');
-    expect(location(), '/items/1');
-    expect(itemDetails, findsOneWidget);
+    await tapTab(tester, 'Characters');
+    expect(location(), '/character-list/1');
+    expect(characterDetail, findsOneWidget);
   });
 
   testWidgets('the app bar back button returns to the list', (tester) async {
     await pumpApp(tester);
-    await openFirstItem(tester);
+    await openFirstCharacter(tester);
 
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    expect(location(), '/items');
-    expect(find.text(openItem), findsOneWidget);
+    expect(location(), '/character-list');
+    expect(find.text(openCharacter), findsOneWidget);
   });
 
   testWidgets('the system back button returns to the list', (tester) async {
     await pumpApp(tester);
-    await openFirstItem(tester);
+    await openFirstCharacter(tester);
 
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
 
-    expect(location(), '/items');
-    expect(find.text(openItem), findsOneWidget);
+    expect(location(), '/character-list');
+    expect(find.text(openCharacter), findsOneWidget);
   });
 
   testWidgets('tapping the active tab returns to its root', (tester) async {
     await pumpApp(tester);
-    await openFirstItem(tester);
+    await openFirstCharacter(tester);
 
-    await tapTab(tester, 'Items');
+    await tapTab(tester, 'Characters');
 
-    expect(location(), '/items');
-    expect(find.text(openItem), findsOneWidget);
+    expect(location(), '/character-list');
+    expect(find.text(openCharacter), findsOneWidget);
   });
 
   testWidgets('changing the theme keeps the current location', (tester) async {
     await pumpApp(tester);
-    await openFirstItem(tester);
+    await openFirstCharacter(tester);
     await tapTab(tester, 'Settings');
 
     await tester.tap(find.text('Dark'));
     await tester.pumpAndSettle();
 
     expect(location(), '/settings');
-    await tapTab(tester, 'Items');
-    expect(location(), '/items/1');
+    await tapTab(tester, 'Characters');
+    expect(location(), '/character-list/1');
   });
 
   group('OBS-3: screen views', () {
@@ -292,27 +338,27 @@ void main() {
     ) async {
       await pumpApp(tester);
 
-      expect(analytics.screens, ['items']);
+      expect(analytics.screens, ['character_list']);
     });
 
-    testWidgets('a pushed item reports the route name, not the id', (
+    testWidgets('a pushed character reports the route name, not the id', (
       tester,
     ) async {
       await pumpApp(tester);
-      await openFirstItem(tester);
+      await openFirstCharacter(tester);
 
-      expect(analytics.screens, ['items', 'item_details']);
+      expect(analytics.screens, ['character_list', 'character_detail']);
     });
 
     testWidgets('going back reports the previous screen', (tester) async {
       await pumpApp(tester);
-      await openFirstItem(tester);
+      await openFirstCharacter(tester);
       analytics.screens.clear();
 
       await tester.pageBack();
       await tester.pumpAndSettle();
 
-      expect(analytics.screens, ['items']);
+      expect(analytics.screens, ['character_list']);
     });
 
     testWidgets('a tab shown for the first time reports once', (tester) async {
@@ -326,25 +372,25 @@ void main() {
 
     testWidgets('returning to a tab reports its top route', (tester) async {
       await pumpApp(tester);
-      await openFirstItem(tester);
+      await openFirstCharacter(tester);
       await tapTab(tester, 'Settings');
       analytics.screens.clear();
 
-      await tapTab(tester, 'Items');
+      await tapTab(tester, 'Characters');
 
-      expect(analytics.screens, ['item_details']);
+      expect(analytics.screens, ['character_detail']);
     });
 
     testWidgets('tapping the active tab on a nested route reports its root', (
       tester,
     ) async {
       await pumpApp(tester);
-      await openFirstItem(tester);
+      await openFirstCharacter(tester);
       analytics.screens.clear();
 
-      await tapTab(tester, 'Items');
+      await tapTab(tester, 'Characters');
 
-      expect(analytics.screens, ['items']);
+      expect(analytics.screens, ['character_list']);
     });
 
     testWidgets('tapping the active tab on its root reports nothing', (
@@ -353,7 +399,7 @@ void main() {
       await pumpApp(tester);
       analytics.screens.clear();
 
-      await tapTab(tester, 'Items');
+      await tapTab(tester, 'Characters');
 
       expect(analytics.screens, isEmpty);
     });
@@ -378,18 +424,17 @@ void main() {
     testWidgets(
       'NAV-7, SET-11: prod hides the entries and redirects the route',
       (tester) async {
-        getIt
-          ..unregister<AppConfig>()
-          ..registerSingleton(
-            const AppConfig(
-              flavor: Flavor.prod,
-              itemsApiBaseUrl: 'https://items.invalid',
-              backendBaseUrl: 'https://backend.invalid',
-              itemsCacheTtlMinutes: 30,
-              privacyPolicyUrl: 'https://privacy.invalid',
-              usageDataSharingDefault: true,
-            ),
-          );
+        await getIt.unregister<AppConfig>();
+        getIt.registerSingleton(
+          const AppConfig(
+            flavor: Flavor.prod,
+            rickAndMortyApiBaseUrl: 'https://characters.invalid',
+            backendBaseUrl: 'https://backend.invalid',
+            characterCacheTtlMinutes: 30,
+            privacyPolicyUrl: 'https://privacy.invalid',
+            usageDataSharingDefault: true,
+          ),
+        );
         await pumpApp(tester);
         await tapTab(tester, 'Settings');
 

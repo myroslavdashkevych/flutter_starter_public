@@ -13,7 +13,7 @@ targets:
           - lib/presentation/**
       retrofit_generator:
         generate_for:
-          - lib/data/**/datasources/**
+          - lib/data/**/data_source/**
       injectable_generator:injectable_builder:
         generate_for:
           - lib/**

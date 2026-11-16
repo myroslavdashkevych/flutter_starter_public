@@ -1,5 +1,5 @@
-import 'package:flutter_starter/domain/_shared/failure.dart';
-import 'package:flutter_starter/domain/auth/entities/app_user.dart';
+import 'package:flutter_starter/domain/_shared/wrapper/result/failure.dart';
+import 'package:flutter_starter/domain/entity/app_user.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'profile_state.freezed.dart';
