@@ -1,7 +1,7 @@
 # Characters (list and details)
 
 Characters from the Rick and Morty API. The `character` area is a demo and is expected to be
-replaced in real projects. Implementation: [area/character.md](../area/character.md).
+replaced in real projects. Implementation: [implementation/character.md](../implementation/character.md).
 
 ## Requirements
 
@@ -44,8 +44,8 @@ replaced in real projects. Implementation: [area/character.md](../area/character
 
 ### Offline and cache
 
-- **CHR-10** Data fetched within the cache TTL (`CHARACTER_CACHE_TTL_MINUTES`, default 30 minutes)
-  is shown without a network request, unless the user refreshes.
+- **CHR-10** Data fetched less than the cache TTL ago (`CHARACTER_CACHE_TTL_MINUTES`, default
+  30 minutes) is shown without a network request, unless the user refreshes.
   - GIVEN page 1 was fetched 10 minutes ago WHEN the list opens THEN page 1 comes from the
     cache without a request
 - **CHR-11** On a network or server (5xx) failure, cached data is shown even when it is older
@@ -56,8 +56,8 @@ replaced in real projects. Implementation: [area/character.md](../area/character
 - **CHR-12** Details open offline for every character of a cached list page.
   - GIVEN a list page was loaded WHEN the user opens one of its characters offline THEN the
     details are shown from the cache
-- **CHR-13** Cached data older than 90 days is deleted after the first frame of a launch; until
-  then it can still be shown offline.
+- **CHR-13** Cached data 90 days old or older is deleted after the first frame of a launch;
+  until then it can still be shown offline.
   - GIVEN a page was cached 91 days ago WHEN the app launches THEN the record is deleted after
     the first frame
 
@@ -104,9 +104,9 @@ replaced in real projects. Implementation: [area/character.md](../area/character
 
 ## Implementation notes
 
-- CHR-6: how the API answers an empty search: [area/character.md](../area/character.md),
+- CHR-6: how the API answers an empty search: [implementation/character.md](../implementation/character.md),
   Source.
 - CHR-8: why `retry-after: 10` is never waited for:
-  [area/network.md](../area/network.md), RetryInterceptor.
+  [implementation/network.md](../implementation/network.md), RetryInterceptor.
 
 Retired: ITM-1, ITM-2, ITM-3, ITM-4, ITM-5, ITM-6, ITM-7, ITM-8, ITM-9, ITM-10, ITM-11, ITM-12, ITM-13, ITM-14, ITM-15, ITM-16, ITM-17, ITM-18, ITM-19

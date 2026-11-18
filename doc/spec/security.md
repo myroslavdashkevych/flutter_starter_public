@@ -6,13 +6,15 @@ attacker. A protection the starter does not use is recorded as a decision with i
 the trigger that reopens it; a rule not implemented yet says so and names the change that
 implements it.
 
-**Here:** the security rules of the app and the repository; the decisions on protections the
-starter does not use, each with its reason and trigger.
+**Here:** the security rules of the app and the repository, including what an AI agent may
+access; the decisions on protections the starter does not use, each with its reason and
+trigger.
 
 **Not here:** the mechanics these rules constrain ([architecture.md](architecture.md):
 Networking, Logging and errors, Local storage); procedures
 ([guide/setup.md](../guide/setup.md), Security checklist and CI;
-[guide/store-release.md](../guide/store-release.md)); rules for agents (`CLAUDE.md`).
+[guide/store-release.md](../guide/store-release.md)); other rules for agents (`CLAUDE.md`);
+the policy's entries (`.claude/settings.json`).
 
 ## Secrets and the repository
 
@@ -30,6 +32,39 @@ Networking, Logging and errors, Local storage); procedures
 - The release signing key and its passwords live only in `android/key.properties`, which is
   never committed.
 
+## Agent access
+
+Secrets must never reach an AI agent's context. The whole policy is `.claude/settings.json`;
+what each sandbox entry is for: [guide/setup.md](../guide/setup.md), Agent sandbox.
+
+- `permissions.deny`: never allowed. Every secret file is a `Read(...)` entry here and nowhere
+  else; with the sandbox on, these entries also stop every shell command and its child
+  processes from reading the file. `Edit(...)` entries stop writes the same way, so generated
+  files, which generators must write, are `ask` entries.
+- `permissions.ask`: only after the user's click in the chat, also in auto mode and after
+  "Yes, and don't ask again". `disableBypassPermissionsMode` keeps every prompt.
+- `permissions.allow`: no prompt.
+- `sandbox`: on, with no unsandboxed retry and no command outside it. The agent does not
+  build or run the app; the user does, because a build outside the sandbox would execute
+  code that sandboxed commands may change (the Flutter and pub caches). The files that decide
+  what a build executes (build scripts, the Gradle wrapper, `local.properties`,
+  `Package.swift`, native-assets hooks) are `ask` entries, since the user's builds run them.
+
+An item changes its level by moving to another list. A new kind of secret also gets a
+`Read(...)` entry in the change that adds its `.gitignore` pattern (Secrets and the
+repository).
+
+- `google-services.json` and `GoogleService-Info.plist` are denied: no tool the agent runs
+  needs them. The Firebase options (`lib/app/config/firebase/`) are not: the app's tools
+  compile them.
+- Git output is not restricted: the sandbox guards files, not git objects, and no secret is
+  ever committed.
+- The sandbox refuses every connection to GitHub, so the agent cannot push while the remote
+  is on GitHub; `git push` and `gh pr create` are also denied.
+- `firebase` and `flutterfire` are denied: the user runs them with their Google login.
+- `Bash(...)` entries match the command text, so they stop the usual form of a command, not
+  every way to run it (for example, environment dumps). The boundary is the sandbox.
+
 ## Tokens
 
 - The Firebase ID token goes only to the app's own backend, through `backendDio`. It is
@@ -37,7 +72,7 @@ Networking, Logging and errors, Local storage); procedures
 
 ## Logs and reports
 
-- Network logs never contain the `Authorization` header and, in `prod`, no bodies.
+- Network logs never contain the `Authorization` header and, in `prod`, no bodies (OBS-6).
 - An event never prints a secret in `toString()`, because events are logged outside `prod`
   (OBS-7).
 - `TalkerBlocObserver` logs only errors in `prod` (OBS-6), because states hold user data.

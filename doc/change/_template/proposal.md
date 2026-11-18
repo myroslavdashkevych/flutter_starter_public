@@ -1,6 +1,6 @@
 # Proposal: <title>
 
-Size: S | M | L (see "Scale by risk" in [doc/README.md](../../README.md)).
+Size: S | M | L (see "Scale by risk" in [doc/workflow.md](../../workflow.md)).
 Folder: `doc/change/<yyyy-mm-dd>-<slug>/`. May be written outside Claude Code. Its content
 goes into the PR description, and the last PR of the change deletes the folder.
 
@@ -31,7 +31,7 @@ Full new text of the requirement with all its scenarios, not a diff.
 
 - **<PREFIX>-n**: <reason>. The ID is added to the file's `Retired` line.
 
-### `doc/spec/area/<area>.md`, `doc/spec/architecture.md`, `doc/spec/tech-stack.md`
+### `doc/spec/implementation/<area>.md`, `doc/spec/architecture.md`, `doc/spec/tech-stack.md`
 
 What changes in the implementation details, structure or dependencies. "None" if nothing.
 

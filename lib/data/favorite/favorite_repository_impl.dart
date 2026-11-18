@@ -7,6 +7,7 @@ import 'package:flutter_starter/domain/_shared/wrapper/result/failure.dart';
 import 'package:flutter_starter/domain/_shared/wrapper/result/result.dart';
 import 'package:flutter_starter/domain/entity/character.dart';
 import 'package:flutter_starter/domain/repository/favorite_repository.dart';
+import 'package:flutter_starter/shared/utils/clock.dart';
 import 'package:injectable/injectable.dart';
 import 'package:talker/talker.dart';
 
@@ -16,9 +17,10 @@ import 'package:talker/talker.dart';
 /// time, so closing a box never overlaps a write.
 @LazySingleton(as: FavoriteRepository)
 class FavoriteRepositoryImpl implements FavoriteRepository {
-  FavoriteRepositoryImpl(this._localDataSource, this._talker);
+  FavoriteRepositoryImpl(this._localDataSource, this._clock, this._talker);
 
   final FavoriteHiveDataSource _localDataSource;
+  final Clock _clock;
   final Talker _talker;
   final _users = <String, _UserRecords>{};
   Future<void> _queue = Future.value();
@@ -55,7 +57,7 @@ class FavoriteRepositoryImpl implements FavoriteRepository {
       } else {
         final record = FavoriteRecordDto(
           schemaVersion: FavoriteHiveDataSource.schemaVersion,
-          addedAt: DateTime.now(),
+          addedAt: _clock.now(),
           character: character.toFavoriteDto(),
         );
         await _localDataSource.write(uid, record);

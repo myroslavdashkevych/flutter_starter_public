@@ -1,4 +1,4 @@
-# Tasks: <title>
+# Change plan: <title>
 
 Written by Claude Code in plan mode after reading `proposal.md` and the code, then approved by
 the user. Deviations from the approved plan are recorded at the end of this file.
@@ -33,11 +33,15 @@ With several pull requests, start each step with the one that lands it: `(PR 1)`
 ## Before review
 
 - [ ] Behavior changes merged into `doc/spec/behavior/`
-- [ ] Area details updated in `doc/spec/area/`
+- [ ] Implementation details updated in `doc/spec/implementation/`
 - [ ] Structure or patterns updated in `doc/spec/architecture.md`
 - [ ] Dependency changes recorded in `doc/spec/tech-stack.md`
 - [ ] Changed procedures updated in `doc/guide/`
+- [ ] Onboarding (`doc/README.md`) still matches the code and docs it traces
 - [ ] New decisions written as ADRs in `doc/decision/`
+- [ ] Every rule the change adds or moves lives in one place
+      ([doc/workflow.md](../../workflow.md), Rule placement)
+- [ ] Every text the change adds or edits meets [doc/workflow.md](../../workflow.md), Writing
 - [ ] Design references updated (`doc/design/`, screen entries)
 - [ ] Every requirement in the delta has a test named by its ID that asserts every THEN of its
       scenarios, or is on the `Manual` line of its behavior file

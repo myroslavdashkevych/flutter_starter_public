@@ -1,4 +1,4 @@
-// Checks the spec conventions from doc/README.md (Requirements, Screens,
+// Checks the spec conventions from doc/workflow.md (Requirements, Screens,
 // Links). Every violation starts with the name of its rule:
 // - format: a requirement is `- **<PREFIX>-<n>** <sentence>`, n is 1 or more
 //   without leading zeros;
@@ -28,7 +28,11 @@
 // - decision: every `.md` in doc/decision/ is `_template.md` or
 //   `ADR-<nnn>-<slug>.md` directly in it; its first line is
 //   `# <ID>: <text>` with the ID of its file name; no ID is in two files;
-// - link: relative Markdown links point to an existing file and heading.
+// - link: relative Markdown links point to an existing file and heading;
+// - toolchain (a warning: it never changes the exit code): the Flutter and
+//   Dart rows of the Verified toolchain table in doc/spec/tech-stack.md name
+//   the versions of the Flutter SDK this check runs on. `.fvmrc` tracks
+//   `stable`, so a new release must show up without failing every run.
 //
 // Prefixes are read from doc/spec/behavior, so nothing here names an area.
 // Limitation: once no behavior file uses a prefix, mentions of it are not
@@ -38,7 +42,8 @@
 // Usage: fvm dart run tool/check_spec.dart [--base <rev>]
 // With --base, the behavior files of <rev> are read through git (only
 // doc/spec/behavior/*.md). Exit codes: 0 clean, 1 violations, 2 usage or
-// git error.
+// git error. Warnings are printed as `warning: ...`, or as GitHub annotations
+// when GITHUB_ACTIONS is `true`.
 import 'dart:convert';
 import 'dart:io';
 
@@ -48,6 +53,8 @@ const _behaviorDir = 'doc/spec/behavior/';
 const _screenPrefix = 'SCR';
 const _decisionDir = 'doc/decision/';
 const _decisionTemplate = 'doc/decision/_template.md';
+const _techStackPath = 'doc/spec/tech-stack.md';
+const _toolchainHeading = 'Verified toolchain';
 
 /// These files contain made-up IDs on purpose.
 const _ownFiles = {'tool/check_spec.dart', 'test/tool/check_spec_test.dart'};
@@ -95,6 +102,14 @@ final _newline = RegExp(r'\r?\n');
 final _scheme = RegExp(r'^[a-zA-Z][a-zA-Z0-9+.-]*:');
 final _headingLink = RegExp(r'\[([^\]]*)\]\([^)]*\)');
 final _slugDrop = RegExp(r'[^\p{L}\p{N}\p{M}\- _]', unicode: true);
+final _headingNumber = RegExp(r'^\d+\. +');
+final _hashes = RegExp(r'^#+');
+
+/// A row of the Verified toolchain table that the toolchain rule compares.
+final _toolchainRow = RegExp(r'^\| *(Flutter|Dart) *\| *([^|]*?) *\|');
+
+/// The Flutter and Dart versions of a Flutter SDK.
+typedef SdkVersions = ({String flutter, String dart});
 
 class Violation {
   const Violation(this.path, this.line, this.rule);
@@ -250,14 +265,113 @@ Map<String, String> readBaseBehaviors(Directory root, String base) {
   };
 }
 
+/// The toolchain rule: compares the Flutter and Dart rows of the Verified
+/// toolchain section in [techStack] (the content of doc/spec/tech-stack.md)
+/// with [sdk], the SDK this check runs on, or null when it is unknown. The
+/// result holds warnings, not violations.
+List<Violation> checkToolchain(String techStack, SdkVersions? sdk) {
+  final lines = techStack.split(_newline);
+  final start = lines.indexWhere(_isToolchainHeading);
+  if (start == -1) {
+    return [
+      const Violation(
+        _techStackPath,
+        1,
+        'toolchain: no "$_toolchainHeading" section',
+      ),
+    ];
+  }
+  if (sdk == null) {
+    return [
+      Violation(
+        _techStackPath,
+        start + 1,
+        'toolchain: the Flutter version of this run is unknown '
+        '(no bin/cache/flutter.version.json next to its Dart SDK)',
+      ),
+    ];
+  }
+
+  // The section ends at the next heading of the same or a higher level, as in
+  // doc/agent-reading.md.
+  final level = _headingLevel(lines[start]);
+  final rows = <String, ({int line, String version})>{};
+  for (var i = start + 1; i < lines.length; i++) {
+    if (_anyHeading.hasMatch(lines[i]) && _headingLevel(lines[i]) <= level) {
+      break;
+    }
+    if (_toolchainRow.firstMatch(lines[i]) case final match?) {
+      rows.putIfAbsent(match[1]!, () => (line: i + 1, version: match[2]!));
+    }
+  }
+  final warnings = <Violation>[];
+  for (final (tool, used) in [('Flutter', sdk.flutter), ('Dart', sdk.dart)]) {
+    final row = rows[tool];
+    if (row == null) {
+      warnings.add(
+        Violation(_techStackPath, start + 1, 'toolchain: no $tool row'),
+      );
+    } else if (row.version != used) {
+      warnings.add(
+        Violation(
+          _techStackPath,
+          row.line,
+          'toolchain: the table lists $tool ${row.version}, this run uses '
+          '$used: run the Verification on it and update the table',
+        ),
+      );
+    }
+  }
+  return warnings;
+}
+
+/// The versions of the Flutter SDK whose Dart runs this check:
+/// `<flutter>/bin/cache/dart-sdk/bin/dart` reads
+/// `<flutter>/bin/cache/flutter.version.json`. [dartExecutable] defaults to
+/// the running Dart. Returns null when the file is missing or malformed.
+SdkVersions? readSdkVersions({String? dartExecutable}) {
+  final dartBin = File(dartExecutable ?? Platform.resolvedExecutable).parent;
+  final file = File('${dartBin.parent.parent.path}/flutter.version.json');
+  try {
+    final Object? json = jsonDecode(file.readAsStringSync());
+    if (json case {
+      'frameworkVersion': final String flutter,
+      'dartSdkVersion': final String dart,
+    }) {
+      return (flutter: flutter, dart: dart);
+    }
+  } on FileSystemException {
+    return null;
+  } on FormatException {
+    return null;
+  }
+  return null;
+}
+
 /// Writes the report for [root] to [out] and returns the exit code.
-int run(Directory root, StringSink out, {String? base}) {
+/// [readSdk] gives the SDK versions for the toolchain rule; with
+/// [githubActions], warnings are written as GitHub annotations.
+int run(
+  Directory root,
+  StringSink out, {
+  String? base,
+  SdkVersions? Function() readSdk = readSdkVersions,
+  bool githubActions = false,
+}) {
   final List<Violation> violations;
   try {
     violations = checkProject(root, revision: base);
   } on GitException catch (error) {
     out.writeln('error: $error');
     return 2;
+  }
+  for (final warning in _toolchainWarnings(root, readSdk)) {
+    out.writeln(
+      githubActions
+          ? '::warning file=${warning.path},line=${warning.line}::'
+                '${_escapeAnnotation(warning.rule)}'
+          : 'warning: $warning',
+    );
   }
   if (violations.isEmpty) {
     out.writeln('No spec violations.');
@@ -270,11 +384,42 @@ int run(Directory root, StringSink out, {String? base}) {
 
 void main(List<String> args) {
   if (args case [] || ['--base', _]) {
-    exitCode = run(Directory.current, stdout, base: args.elementAtOrNull(1));
+    exitCode = run(
+      Directory.current,
+      stdout,
+      base: args.elementAtOrNull(1),
+      githubActions: Platform.environment['GITHUB_ACTIONS'] == 'true',
+    );
   } else {
     stderr.writeln('usage: dart run tool/check_spec.dart [--base <rev>]');
     exitCode = 2;
   }
+}
+
+List<Violation> _toolchainWarnings(
+  Directory root,
+  SdkVersions? Function() readSdk,
+) {
+  final file = File('${root.path}/$_techStackPath');
+  // A project without the file has no table to compare.
+  if (!file.existsSync()) return const [];
+  return checkToolchain(file.readAsStringSync(), readSdk());
+}
+
+/// The number of `#` of a heading [line].
+int _headingLevel(String line) =>
+    line.length - line.replaceFirst(_hashes, '').length;
+
+/// Escapes a GitHub workflow command message, so it stays one annotation.
+String _escapeAnnotation(String message) => message
+    .replaceAll('%', '%25')
+    .replaceAll('\r', '%0D')
+    .replaceAll('\n', '%0A');
+
+bool _isToolchainHeading(String line) {
+  final match = _heading.firstMatch(line);
+  return match != null &&
+      match[1]!.replaceFirst(_headingNumber, '') == _toolchainHeading;
 }
 
 class _Id {

@@ -1,166 +1,117 @@
-# Documentation
+# Onboarding
 
-The specification in `spec/` describes how the app works **now**. Every behavior change
-updates it in the same pull request. Plans live only while a change is in flight.
+**Here:** how to find your way around the starter as a person: the mental model, one request
+traced through the code, the order to read the docs in, how a change goes, and where common
+things belong.
 
-**Here:** the map of the documentation, who owns what, the format of requirements and screens,
-the change process with its verification, ADRs and links.
+**Not here:** rules (each lives in one document, linked below; the map of the documentation
+and the change workflow: [workflow.md](workflow.md)); running the app, tools and Firebase
+([guide/setup.md](guide/setup.md)).
 
-**Not here:** rules for agents and commands (`CLAUDE.md`); what an agent reads, and when
-([reading-rule.md](reading-rule.md)); structure and patterns
-([spec/architecture.md](spec/architecture.md)); code style
-([spec/code-style.md](spec/code-style.md)); security rules
-([spec/security.md](spec/security.md)).
+New here? Run the app first ([guide/setup.md](guide/setup.md), Quick start). When building,
+running or analyzing fails: [guide/troubleshooting.md](guide/troubleshooting.md).
 
-## Map
+## The mental model
 
-| Path | What it holds | Changes when |
-|---|---|---|
-| [reading-rule.md](reading-rule.md) | Reading rules for agents: what to read for which change | A document is added, moved or split |
-| [spec/product.md](spec/product.md) | Vision, users, scope, non-goals, localization | Scope changes |
-| [spec/behavior/](spec/behavior/) | One file per area or cross-cutting topic: requirements with IDs and scenarios, screens | Any behavior change |
-| [spec/area/](spec/area/) | Implementation details per area: contracts, data sources, storage keys, wiring | Area internals change |
-| [spec/architecture.md](spec/architecture.md) | Rules every change needs: layers, folders, import rules, data flow, and one section per cross-cutting pattern (errors, DI, networking, storage, state, routing, logging, testing) | Structure or a pattern changes |
-| [spec/code-style.md](spec/code-style.md) | How code is written inside a file: naming, class member order, methods, widgets, language usage, with the source of each rule | A style rule or a lint changes |
-| [spec/security.md](spec/security.md) | Every security rule of the app and the repository: secrets, tokens, logs and reports, personal data, storage, release hardening, CI; decisions on protections not used, with their triggers | A security rule or decision changes |
-| [spec/tech-stack.md](spec/tech-stack.md) | Approved dependencies, compatibility notes | `pubspec.yaml` changes |
-| [decision/](decision/) | The project's ADRs (`ADR-nnn`): why a decision was made, what was rejected | A decision is made or replaced |
-| [design/](design/README.md) | Approved screen designs and design conventions | A design is approved |
-| [change/](change/) | One folder per change in flight; deleted by its last pull request | During a change |
-| [guide/](guide/) | How-tos: [onboarding](guide/onboarding.md), [setup](guide/setup.md), [new project](guide/new-project.md), [store release](guide/store-release.md) | A procedure changes |
+The app has three layers, and dependencies point inward:
 
-## Source of truth
+```
+presentation  ──>  domain  <──  data
+ (UI, Blocs)     (pure Dart)   (APIs, storage)
+```
 
-- The **spec** owns behavior, states and navigation.
-- The **ARB files** (`lib/l10n/arb`) own the wording of user-facing texts. The spec quotes a
-  text only where a behavior depends on it.
-- The **design** (`design/screen/`) owns the look.
-- **Theme tokens in code** (`lib/presentation/_shared/theme`: `AppTheme`, and `AppSpacing` in
-  `theme/const/`) own colors, typography, spacing and sizes.
+- **domain** says what the app can do: entities, repository contracts and use cases. It knows
+  no Flutter, no HTTP and no storage, so it is the easiest part to read first.
+- **data** implements the contracts: it calls APIs and storage and turns their answers into
+  entities and `Result` values. Nothing above it ever sees an exception or a DTO.
+- **presentation** shows state and sends events. A Bloc reaches data only through a use
+  case, never directly.
+- **app** wires everything together: dependency injection, routes and startup.
 
-When two of them disagree, when the spec and the code disagree, or when a built screen differs
-from its approved design, stop and ask the user. Never resolve a conflict silently.
+The rules behind this picture: [architecture.md](spec/architecture.md), Principles and
+Terms.
 
-## Requirements
+## One request, end to end
 
-- **IDs.** An area prefix and a number: `NAV`, `AUTH`, `CHR`, `PRF`, `SET`, `NTF`, `OBS`,
-  `SPL`, `FAV`, `ACC`. Each requirement is one observable behavior.
-- **Never reused.** A removed requirement is deleted from the spec and its ID is added to the
-  `Retired` line at the end of its file, and stays there for good. When a prefix is renamed, the
-  new file lists every ID of the old prefix on its `Retired` line. A new ID takes the next free
-  number and is reserved in the change's `proposal.md`. Two changes in flight may reserve the
-  same number; the review sees only its own branch and cannot notice. CI catches it with the
-  unique-ID check, but only in a run made after the other change merged: a pull request's CI
-  result must be newer than the last merge into `develop` ([guide/setup.md](guide/setup.md),
-  Branch protection). The change that merges second renumbers its IDs, together with its test names
-  and references, since no check notices a test that still names the old ID.
-- **Format.** The ID in bold, one sentence of behavior in the present tense, and at least one
-  scenario (`WHEN … THEN …`, with `GIVEN` when there is a precondition):
+Opening the Characters tab, from the route to the screen:
 
-  ```
-  - **FAV-2** A guest sees no favorite toggles.
-    - WHEN a guest opens the characters list THEN no tile shows a favorite toggle
-  ```
+1. `app/router/routes.dart`: `CharacterListRoute` creates `CharacterListBloc` through DI,
+   adds `CharacterListLoadRequested` and builds `CharacterListPage`. The page gets
+   `onCharacterSelected` as a callback, so it never navigates by itself.
+2. `presentation/character_list/bloc/character_list_bloc.dart`: the handler calls
+   `GetCharacterPageUseCase` and emits a new `CharacterListState`.
+3. `domain/use_case/character/get_character_page_use_case.dart`: trims the search query and
+   calls `CharacterRepository.getPage`, a contract in `domain/repository/`.
+4. `data/character/character_repository_impl.dart`: returns a fresh cached page from
+   `CharacterHiveDataSource`, or asks `CharacterApiDataSource` (retrofit), stores the answer
+   and returns it. A network or server failure falls back to a stale cached page, if there is
+   one.
+5. Back up: the result arrives as `Ok` or `Err`, the Bloc emits it, and the page rebuilds.
+   A tap on a tile calls `onCharacterSelected(id)`, and the route builder opens
+   `CharacterDetailRoute`.
 
-- **Vague spots** are marked inline: `[NEEDS CLARIFICATION: <question>]`. Before changing a
-  requirement that carries a marker, ask the user.
-- **Implementation notes** in a behavior file hold only facts that explain an observable
-  behavior. Everything else about how an area works goes to `spec/area/<area>.md`.
-- **Tests** name the requirement they check: `'FAV-2: guest sees no toggle'`; a test that
-  checks several lists them: `'FAV-1, FAV-11: adding sends the event'`. A `group` name may
-  carry the IDs for all its tests. Every requirement has at least one such test, or its ID is
-  on the `Manual` line of its behavior file. `check_spec` checks only the names; the review reads
-  the tests of the requirements in a change's delta and checks that every THEN is asserted.
-- **Manual checks.** A requirement that no automated test can reasonably check is listed on
-  one `Manual` line right before the `Retired` line of its behavior file
-  (`Manual: SPL-1, SPL-2, SPL-3`; a file without such requirements has no `Manual` line). Its
-  scenarios are the manual check; no separate steps are written. The change that adds an ID
-  there says why it cannot be automated (in `tasks.md`, or in the review prompt for a change
-  without a folder). When a test for it appears, the ID leaves the line.
-- **Checked** by `tool/check_spec.dart`, also in CI: requirement and screen format, scenarios,
-  unique IDs, the `Retired` line, no gaps in numbering, ID references in docs and code, and
-  test names; every requirement has a test or a `Manual` entry, and the `Manual` line is well
-  formed. With `--base <rev>` (in CI: the target branch, or the previous tip on a push) it also
-  checks that no ID defined or retired in that revision disappeared or left the `Retired` line;
-  locally: `fvm dart run tool/check_spec.dart --base develop`. Also the layout of `decision/`:
-  file names, the heading with the ID of the file name, and unique IDs.
+What this flow must do is in [behavior/character.md](spec/behavior/character.md); how the
+cache works is in [implementation/character.md](spec/implementation/character.md).
 
-## Screens
+## Reading order
 
-Each screen has a global ID `SCR-n`, defined in the behavior file that owns it, with its route,
-its states and the requirement IDs they relate to, and a design line:
+1. [product.md](spec/product.md): what the app is and what it is not.
+2. One behavior file, for example [behavior/character.md](spec/behavior/character.md):
+   requirements with IDs (`CHR-1`) and their scenarios. Tests carry these IDs in their
+   names, so a search for an ID finds its tests.
+3. The matching implementation file, for example
+   [implementation/character.md](spec/implementation/character.md): the
+   contracts, data sources and storage behind that behavior.
+4. [architecture.md](spec/architecture.md) when you write code, and
+   [code-style.md](spec/code-style.md) when you review it.
+5. [security.md](spec/security.md): what must never reach the repository, logs, crash
+   reports or analytics, and the protections the starter decided not to use.
 
-- `Design: pending`: no approved design; the screen uses theme tokens and shared widgets only.
-- Later: a path under `design/screen/` plus a Figma node link or a Claude Design link.
+[agent-reading.md](agent-reading.md) is written for AI agents: it tells them which
+documents to read for which files. You can skip it.
 
-## Changes
+## How a change goes
 
-Every change, of any size, goes on its own branch from `develop`, named `<type>/<slug>` with the
-type of its commit prefix, and reaches `develop` through a pull request. Dependabot pull
-requests are the exception to the branch name: GitHub names them `dependabot/...`; their
-commits use the `chore:` and `ci:` prefixes ([guide/setup.md](guide/setup.md), Dependabot).
-They need no proposal and no review: the user checks CI and the changelog and merges them. `main` receives only
-merges from `develop`. Commit messages are Conventional Commits in English: `feat:`, `fix:`,
-`refactor:`, `test:`, `docs:`, `chore:`, `ci:`.
+Every change has a size, and the size sets how much process it needs
+([workflow.md](workflow.md), Scale by risk, which decides):
 
-1. **Proposal** (`change/<yyyy-mm-dd>-<slug>/proposal.md`, from
-   [the template](change/_template/proposal.md)): why, the spec delta grouped by target file
-   (ADDED / MODIFIED with the full new text / REMOVED), design delta, acceptance criteria, out
-   of scope, open questions. It may be written outside Claude Code.
-2. **Tasks** (`tasks.md`, from [the template](change/_template/tasks.md)): written by Claude
-   Code in plan mode after reading the code, approved by the user. Discrepancies between the
-   proposal and the code come first; deviations from the approved plan are recorded at the end.
-3. **Implement** with tests named by requirement IDs. In the same pull request, merge the delta
-   into `spec/`, write ADRs for durable reasoning and update the other docs ("Before review" in
-   [the tasks template](change/_template/tasks.md)), so the review sees the final spec. A
-   large change may land in several pull requests: each merges the part of the delta it
-   implements, so `develop` keeps a spec that matches the code, and `tasks.md` marks each step
-   with the pull request that lands it (`(PR 1)`). Then run Verification (below).
-4. **Review** by the `change-reviewer` agent
-   ([.claude/agents/change-reviewer.md](../.claude/agents/change-reviewer.md), checklist and
-   parameters there). It reports;
-   the main session fixes. Size S changes are reviewed too, without a change folder.
-5. **Before merge:** the proposal goes into the description of every pull request of the
-   change, with the steps that pull request covers, and the last one deletes the change folder. Git history and the PRs keep the record; there is no
-   archive folder. CI warns while a change folder exists, so a forgotten one stays visible.
+- **S** needs no change folder: a bug fix that restores specified behavior, a typo, a
+  refactor without behavior change, or a docs change that changes no rule, requirement or
+  screen.
+- **M** and **L** start with a `proposal.md` (why, and the exact new requirements) and a
+  `change-plan.md`: every behavior change, a structural refactor, a new feature.
 
-### Verification
+Every change gets its own branch and pull request. Before the pull request, the
+`change-reviewer` agent reviews it, and the checks of [workflow.md](workflow.md),
+Verification, run; CI runs those checks again ([guide/setup.md](guide/setup.md), CI).
 
-Before a change is called done:
+Dependabot pull requests follow a rule of their own ([workflow.md](workflow.md), Changes;
+[guide/setup.md](guide/setup.md), Dependabot).
 
-1. If annotated classes or ARB files changed: `fvm dart run build_runner build` /
-   `fvm flutter gen-l10n`
-2. `fvm flutter analyze` (no issues)
-3. `fvm dart run tool/check_imports.dart` and `fvm dart run tool/check_spec.dart --base develop`
-4. `fvm flutter test`
-5. `fvm dart format` on changed files only
-6. New user-facing strings exist in both `app_en.arb` and `app_uk.arb`
-7. Docs match the change: the "Before review" list of
-   [the tasks template](change/_template/tasks.md)
+## Where does it go?
 
-### Scale by risk
+| You want to add | Start here |
+|---|---|
+| A screen | [architecture.md](spec/architecture.md), Adding a feature, which lists the steps in order; the screen entry: [workflow.md](workflow.md), Screens |
+| A call to an API | [architecture.md](spec/architecture.md), Networking: search the data sources first, since every remote call has one place; where the auth token may go: [security.md](spec/security.md), Tokens |
+| A secret, an API key or a config value | [security.md](spec/security.md), Secrets and the repository |
+| Stored data | [architecture.md](spec/architecture.md), Local storage: decide first whether it is a cache or user data |
+| Logging, storing or sending personal data | [security.md](spec/security.md), Personal data and Local storage |
+| A package | [tech-stack.md](spec/tech-stack.md) and [architecture.md](spec/architecture.md), External packages; a `pubspec.yaml` change needs approval. Updates of existing packages come from Dependabot ([guide/setup.md](guide/setup.md), Dependabot) |
+| A text on screen | [architecture.md](spec/architecture.md), Localization, and [workflow.md](workflow.md), Verification |
+| A decision worth explaining later | An ADR in `doc/decision/` ([workflow.md](workflow.md), ADRs) |
 
-| Size | Examples | Process |
-|---|---|---|
-| S | Bug fix that restores specified behavior, typo, refactor without behavior change | No change folder; a regression test named by the broken requirement's ID that asserts the broken THEN; the "Before review" list of the tasks template still applies |
-| M | Small behavior change, structural refactor | Short proposal and tasks |
-| L | New feature, architecture, data model | Full proposal, research, ADRs |
+## Working with an AI agent
 
-Only the three kinds listed for S go without a change folder; any behavior change is M or L.
-Any behavior change updates the spec, whatever its size.
+`CLAUDE.md` holds the rules for Claude Code, and `.claude/` holds its settings and hooks.
+What to expect:
 
-## ADRs
-
-[decision/_template.md](decision/_template.md): context, decision, alternatives considered,
-consequences, status (`Accepted` or `Superseded by <ID>`). An ADR is never rewritten; a new
-decision supersedes it. Only its links may be fixed when their target moves.
-
-ADRs are `ADR-nnn` in `decision/`, numbered from `ADR-001`. The starter has none: its rules
-live in `spec/` and `guide/`. `tool/check_spec.dart` checks the layout (Requirements).
-
-## Links
-
-Link to a file and name the heading ("`guide/setup.md`, Flavors"). Do not refer to
-section numbers: they change when a document is reorganized. `tool/check_spec.dart` checks
-that relative links point to an existing file and heading; links inside `change/` are not
-checked.
+- The agent writes the plan (`change-plan.md`) and waits for your approval before it
+  implements an M or L change.
+- What it may do alone, only after your click, or never is one policy,
+  `.claude/settings.json`, with its shell commands in a sandbox
+  ([spec/security.md](spec/security.md), Agent access).
+- The agent runs the `change-reviewer` agent only after your yes (`CLAUDE.md`, Change
+  workflow).
+- The `change-reviewer` agent only reports; the session that made the change fixes the
+  findings ([guide/setup.md](guide/setup.md), Change reviewer).

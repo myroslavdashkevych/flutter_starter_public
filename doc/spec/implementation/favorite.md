@@ -1,6 +1,6 @@
-# Area: favorite
+# Implementation: favorite
 
-**Areas:** `domain/entity/user_favorites.dart`, `domain/entity/favorite_mark.dart`,
+**Code:** `domain/entity/user_favorites.dart`, `domain/entity/favorite_mark.dart`,
 `domain/repository/favorite_repository.dart`, `domain/use_case/favorite`, `data/favorite`, `presentation/favorite_list`; the toggle lives in
 `presentation/_shared/component/favorite_toggle`. Behavior:
 [behavior/favorite.md](../behavior/favorite.md).
@@ -39,7 +39,7 @@ Changes reach every screen through streams.
   `LazyBox` per user, `favorite_<uid in hex>` (the user id in hex, as for every
   case-sensitive box name part).
 - Key: the character id. Envelope, `FavoriteRecordDto`:
-  `{ "schemaVersion": 1, "addedAt": <iso8601>, "data": <dto.toJson()> }`.
+  `{ "schemaVersion": 1, "addedAt": <iso8601 UTC>, "data": <dto.toJson()> }`.
 - `FavoriteCharacterDto` is a snapshot of `Character`. This is user data, not a cache
   ([architecture.md](../architecture.md), Cache or user data), with every rule of user data
   there; when it is deleted: FAV-7.

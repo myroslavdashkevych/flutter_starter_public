@@ -1,6 +1,6 @@
 # Favorites
 
-Favorites belong to signed-in users. Implementation: [area/favorite.md](../area/favorite.md).
+Favorites belong to signed-in users. Implementation: [implementation/favorite.md](../implementation/favorite.md).
 
 ## Requirements
 

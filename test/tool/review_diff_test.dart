@@ -13,8 +13,6 @@ void main() {
       'android/app/src/dev/google-services.json',
       'google-services.json',
       'ios/config/dev/GoogleService-Info.plist',
-      'lib/app/config/firebase/firebase_options_dev.dart',
-      'lib/app/config/firebase/firebase_options.dart',
       '.env',
       '.env.example',
       'config/.env.prod',
@@ -34,6 +32,8 @@ void main() {
       'service-account.json',
       '.ssh/id_ed25519',
       'home/.ssh/config',
+      'doc/id_rsa.md',
+      'lib/id_rsa_parser.dart',
       'ANDROID/APP/GOOGLE-SERVICES.JSON',
       r'android\app\google-services.json',
       'android/app/google-services.json/',
@@ -45,6 +45,8 @@ void main() {
     }
 
     for (final path in [
+      // Not secrets (doc/spec/security.md, Secrets and the repository).
+      'lib/app/config/firebase/firebase_options_dev.dart',
       'lib/app/config/firebase/firebase_setup.dart',
       'lib/app/config/firebase/options.dart',
       'doc/google-services.md',
@@ -59,8 +61,6 @@ void main() {
       'doc/service-account.md',
       'ssh/config',
       'doc/ssh.md',
-      'doc/id_rsa.md',
-      'lib/id_rsa_parser.dart',
       'doc/p8-keys.md',
       'lib/valid_id.dart',
       'config/dev.json',
@@ -68,6 +68,61 @@ void main() {
     ]) {
       test('passes $path', () => expect(isNeverRead(path), isFalse));
     }
+  });
+
+  group('secretPatterns', () {
+    List<RegExp> patterns(List<String> deny) => secretPatterns(
+      '{"permissions": {"deny": [${deny.map((e) => '"$e"').join(', ')}]}}',
+    );
+
+    test('reads only Read entries that can match a repository path', () {
+      final list = patterns([
+        'Read(**/key.properties)',
+        'Read(~/.ssh/**)',
+        'Read(//etc/hosts)',
+        'Edit(**/.env*)',
+        'Bash(git push*)',
+      ]);
+
+      expect(list, hasLength(1));
+      expect(isNeverRead('android/key.properties', patterns: list), isTrue);
+      expect(isNeverRead('.env', patterns: list), isFalse);
+    });
+
+    test('matches the glob forms of Claude Code', () {
+      final list = patterns([
+        'Read(**/*.pem)',
+        'Read(/config/secret.json)',
+        'Read(./android/upload.txt)',
+        'Read(secrets/**)',
+        'Read(**/token?.txt)',
+      ]);
+
+      for (final path in [
+        'a/b/server.pem',
+        'config/secret.json',
+        'android/upload.txt',
+        'secrets/x/y.txt',
+        'deep/secrets/y.txt',
+        'token1.txt',
+      ]) {
+        expect(isNeverRead(path, patterns: list), isTrue, reason: path);
+      }
+      for (final path in [
+        'server.pem.md',
+        'lib/config/secret.json',
+        'app/android/upload.txt',
+        'secret/y.txt',
+        'token12.txt',
+      ]) {
+        expect(isNeverRead(path, patterns: list), isFalse, reason: path);
+      }
+    });
+
+    test('a policy without a deny list or not JSON throws', () {
+      expect(() => secretPatterns('{"permissions": {}}'), throwsA(anything));
+      expect(() => secretPatterns('not json'), throwsA(anything));
+    });
   });
 
   group('parseArgs', () {
@@ -186,10 +241,7 @@ void main() {
       git(['branch', 'develop']);
       writeFile('a.txt', 'two\n');
       writeFile('android/app/google-services.json', '$_secret 2\n');
-      writeFile(
-        'lib/app/config/firebase/firebase_options_dev.dart',
-        '$_secret 3\n',
-      );
+      writeFile('ios/Runner/GoogleService-Info.plist', '$_secret 3\n');
       git(['add', '.']);
       git(['commit', '-q', '-m', 'second commit']);
       writeFile('a.txt', 'three\n');
@@ -211,9 +263,7 @@ void main() {
       );
       expect(
         out,
-        contains(
-          'skipped (never read): lib/app/config/firebase/firebase_options_dev.dart',
-        ),
+        contains('skipped (never read): ios/Runner/GoogleService-Info.plist'),
       );
       expect(out, contains('skipped (never read): .env'));
       expect(out, isNot(contains(_secret)));

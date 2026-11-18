@@ -8,6 +8,7 @@ import 'package:flutter_starter/domain/_shared/wrapper/result/failure.dart';
 import 'package:flutter_starter/domain/_shared/wrapper/result/result.dart';
 import 'package:flutter_starter/domain/entity/character.dart';
 import 'package:flutter_starter/domain/repository/character_repository.dart';
+import 'package:flutter_starter/shared/utils/clock.dart';
 import 'package:injectable/injectable.dart';
 import 'package:talker/talker.dart';
 
@@ -19,12 +20,14 @@ class CharacterRepositoryImpl implements CharacterRepository {
     this._api,
     this._localDataSource,
     @Named(characterCacheTtlName) this._cacheTtl,
+    this._clock,
     this._talker,
   );
 
   final CharacterApiDataSource _api;
   final CharacterHiveDataSource _localDataSource;
   final Duration _cacheTtl;
+  final Clock _clock;
   final Talker _talker;
 
   @override
@@ -76,7 +79,7 @@ class CharacterRepositoryImpl implements CharacterRepository {
   }
 
   bool _isFresh(CachedRecordDto<Object> record) =>
-      DateTime.now().difference(record.fetchedAt) < _cacheTtl;
+      _clock.now().difference(record.fetchedAt) < _cacheTtl;
 
   bool _canUseStale(Failure failure) =>
       failure is NetworkFailure || failure is ServerFailure;

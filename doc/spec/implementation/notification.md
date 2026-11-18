@@ -1,6 +1,6 @@
-# Area: notification
+# Implementation: notification
 
-**Areas:** `domain/entity/notification_message.dart`,
+**Code:** `domain/entity/notification_message.dart`,
 `domain/repository/notification_repository.dart`,
 `domain/use_case/notification`, `data/notification`; wiring in
 `app/notification`; the permission dialog in `presentation/_shared/widget/dialog`. Behavior:
@@ -57,6 +57,5 @@
   `firebase_messaging_installation_id_enabled` in `AndroidManifest.xml`. `getToken` and
   `onTokenRefresh` are deprecated and not used.
 - The FID is logged with Talker (no backend to register it yet).
-- A backend must send with the target `fid`. Check any third-party push service for FID
-  support before adopting it (also in [guide/store-release.md](../../guide/store-release.md),
-  Push notifications).
+- What a backend and a third-party push service need:
+  [guide/store-release.md](../../guide/store-release.md), Push notifications.

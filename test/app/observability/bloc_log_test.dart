@@ -1,4 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_starter/app/config/flavor.dart';
+import 'package:flutter_starter/app/observability/bloc_logging.dart';
 import 'package:flutter_starter/domain/_shared/wrapper/result/failure.dart';
 import 'package:flutter_starter/domain/_shared/wrapper/result/result.dart';
 import 'package:flutter_starter/domain/entity/app_user.dart';
@@ -16,7 +18,6 @@ import 'package:flutter_starter/presentation/profile/bloc/profile_event.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:talker/talker.dart';
-import 'package:talker_bloc_logger/talker_bloc_logger.dart';
 
 import '../../helper/fake_analytics_service.dart';
 import '../../helper/fake_favorite_repository.dart';
@@ -34,11 +35,7 @@ void main() {
   setUp(() {
     talker = Talker();
     previousObserver = Bloc.observer;
-    // As bootstrap.dart sets it up outside prod.
-    Bloc.observer = TalkerBlocObserver(
-      talker: talker,
-      settings: const TalkerBlocLoggerSettings(),
-    );
+    Bloc.observer = createBlocObserver(talker: talker, flavor: Flavor.dev);
     repository = MockAuthRepository();
     when(repository.authStateChanges)
         .thenAnswer((_) => const Stream<AppUser?>.empty());

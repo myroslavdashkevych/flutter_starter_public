@@ -1465,6 +1465,38 @@ final helper = GetItHelper(container);
       }
     });
 
+    test('reports the system time outside Clock, in every folder', () {
+      for (final path in [
+        'lib/data/character/data_source/character_hive_data_source.dart',
+        'lib/app/bootstrap.dart',
+      ]) {
+        final violations = checkFile(path, '''
+final a = DateTime.now();
+// final b = DateTime.now();
+final c = DateTime.nowhere;
+final d = DateTime . now;
+final e = DateTime.timestamp();
+''');
+
+        expect(violations.map((v) => v.line), [1, 4, 5], reason: path);
+        expect(
+          violations.first.rule,
+          'the current time is read only through Clock '
+          '(doc/spec/architecture.md, Time)',
+        );
+      }
+    });
+
+    test('allows the system time in Clock', () {
+      expect(
+        checkFile(
+          'lib/shared/utils/clock.dart',
+          'DateTime now() => DateTime.now().toUtc();\n',
+        ),
+        isEmpty,
+      );
+    });
+
     test('ignores commented-out imports', () {
       final violations = checkFile(
         'lib/domain/entity/a.dart',
@@ -1562,6 +1594,7 @@ sealed class Failure {}
         'lib/data/character/model/character_dto.g.dart',
         'lib/data/character/model/character_dto.freezed.dart',
         'lib/l10n/gen/app_localizations.dart',
+        'lib/app/config/firebase/firebase_options_dev.dart',
       ]) {
         expect(
           checkFile(generated, 'class A {}\nclass B {}\n'),
@@ -2076,7 +2109,7 @@ void start() => stream.listen((value) {});
     test('never opens a never-read file', () {
       writeFile('lib/main.dart', "import '$_own/app/app.dart';\n");
       // Not valid UTF-8: reading it as a string would throw.
-      File('${root.path}/lib/app/config/firebase/firebase_options_dev.dart')
+      File('${root.path}/lib/app/config/.env.dart')
         ..createSync(recursive: true)
         ..writeAsBytesSync([0xff, 0xfe, 0xfd]);
       final out = StringBuffer();

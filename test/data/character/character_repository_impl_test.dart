@@ -8,6 +8,7 @@ import 'package:flutter_starter/domain/_shared/wrapper/pagination/paginated.dart
 import 'package:flutter_starter/domain/_shared/wrapper/result/failure.dart';
 import 'package:flutter_starter/domain/_shared/wrapper/result/result.dart';
 import 'package:flutter_starter/domain/entity/character.dart';
+import 'package:flutter_starter/shared/utils/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:talker/talker.dart';
@@ -28,8 +29,9 @@ void main() {
   final cachedPage = testPageDto(ids: [2]);
   final requestOptions = RequestOptions(path: '/character');
 
-  DateTime fresh() => DateTime.now().subtract(const Duration(minutes: 29));
-  DateTime expired() => DateTime.now().subtract(const Duration(minutes: 31));
+  final now = DateTime.utc(2026, 11, 17, 12);
+  DateTime fresh() => now.subtract(const Duration(minutes: 29));
+  DateTime expired() => now.subtract(const Duration(minutes: 31));
 
   DioException httpError(int statusCode) => DioException(
     requestOptions: requestOptions,
@@ -84,6 +86,7 @@ void main() {
       api,
       local,
       ttl,
+      Clock.from(() => now),
       Talker(settings: TalkerSettings(useConsoleLogs: false)),
     );
     when(
@@ -117,6 +120,27 @@ void main() {
       expect((result as Ok<Paginated<Character>>).value, pageWith(1));
       verify(() => local.writePage(page: 1, query: 'rick', dto: networkPage))
           .called(1);
+    });
+
+    test('CHR-10: a record exactly at the TTL is not fresh', () async {
+      stubCachedPage(cachedPage, fetchedAt: now.subtract(ttl));
+
+      final result = await getPage();
+
+      expect((result as Ok<Paginated<Character>>).value, pageWith(1));
+      verify(() => api.getCharacters(1, 'rick')).called(1);
+    });
+
+    test('CHR-10: a record one second before the TTL is fresh', () async {
+      stubCachedPage(
+        cachedPage,
+        fetchedAt: now.subtract(ttl).add(const Duration(seconds: 1)),
+      );
+
+      final result = await getPage();
+
+      expect((result as Ok<Paginated<Character>>).value, pageWith(2));
+      verifyNever(() => api.getCharacters(any(), any()));
     });
 
     test('CHR-10: an expired cache fetches again', () async {

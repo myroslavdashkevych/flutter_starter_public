@@ -22,7 +22,9 @@ to SCR-1 to SCR-9; SCR-10 (Logs) is a package screen and is not covered.
 - An icon-only button gets a `tooltip`, which is also its screen reader label (ACC-1).
 - An image that repeats text shown next to it gets no label: the character image always sits
   next to the character's name (ACC-1).
-- Colors come only from the theme's `colorScheme` (ACC-3).
+- Colors come only from the theme: its `colorScheme` and its extra color roles (ACC-3). The
+  on-colors of the extra roles keep a contrast of at least 4.5:1 in both themes, checked by
+  `app_color_extension_test.dart`.
 - A row that holds text uses `Flexible` or `Expanded` and lets the text wrap; nothing that
   holds text has a fixed height (ACC-4).
 

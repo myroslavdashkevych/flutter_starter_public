@@ -1,6 +1,6 @@
-# Area: network
+# Implementation: network
 
-**Areas:** `data/_shared/data_source/network`, `app/di/config_module/network_module.dart`. Behavior:
+**Code:** `data/_shared/data_source/network`, `app/di/config_module/network_module.dart`. Behavior:
 [behavior/character.md](../behavior/character.md) (CHR-7, CHR-8), the only feature that uses it.
 
 How the shared Dio clients work. The rules they follow:

@@ -8,7 +8,7 @@ document that holds the details.
 Create a repository from this template on GitHub, with "Include all branches" off, so the
 copy has only `main`, and clone it. Then create a `develop` branch from `main` and push it: it
 stays for good, and every change, including the steps below, goes on its own branch from it
-([doc/README.md](../README.md), Changes); the rename in step 2, for example, on
+([doc/workflow.md](../workflow.md), Changes); the rename in step 2, for example, on
 `chore/init-project`.
 
 A template copies files, not repository settings. Set them in the new repository:
@@ -110,6 +110,13 @@ configs), and the script warns about it. Until they are generated:
 - [ ] **Spacing tokens.** Replace the values in
   `lib/presentation/_shared/theme/const/app_spacing.dart` with the scale of your design; keep
   the role names or rename them across `lib/presentation/`.
+- [ ] **Colors.** Replace the seeds in
+  `lib/presentation/_shared/theme/const/app_color.dart` ([setup.md](setup.md), Colors).
+- [ ] **Fonts.** Replace the files in `assets/font/`, the families under `flutter: fonts:` in
+  `pubspec.yaml` and the names in `lib/presentation/_shared/theme/const/app_font.dart`
+  ([setup.md](setup.md), Fonts).
+- [ ] **Icons.** If the design has its own icons, add them as an icon font
+  ([setup.md](setup.md), Icons).
 - [ ] **Hosting pages.** `hosting/*.html`: follow the `CHANGE FOR A NEW PROJECT` comment
   at the top of each page. Name the legal entity in the privacy policy, and rewrite the
   data table if the SDKs or a backend differ.
@@ -119,7 +126,7 @@ configs), and the script warns about it. Until they are generated:
   page.
 - [ ] **Contact.** The contact email on all three hosting pages and in both store
   consoles.
-- [ ] **README.md and CLAUDE.md.** The project name and description.
+- [ ] **Root README.md and CLAUDE.md.** The project name and description.
 - [ ] **Backend data.** If a backend stores user data, account deletion must delete it as
   well ([spec/behavior/profile.md](../spec/behavior/profile.md), Scope), and
   `delete-account.html` must say so.
@@ -136,9 +143,9 @@ Do this together with the demo blocks ("Demo and optional blocks" below).
 
 - [ ] **Product.** Replace `doc/spec/product.md` with your app's vision, users, scope and
   non-goals.
-- [ ] **Behavior.** Delete the behavior and area files of every removed block
-  (`doc/spec/behavior/<area>.md`, `doc/spec/area/<area>.md`), and write your own behavior
-  specs with requirement IDs, scenarios and screens ([doc/README.md](../README.md), Requirements, Screens). Update the
+- [ ] **Behavior.** Delete the behavior and implementation files of every removed block
+  (`doc/spec/behavior/<area>.md`, `doc/spec/implementation/<area>.md`), and write your own behavior
+  specs with requirement IDs, scenarios and screens ([doc/workflow.md](../workflow.md), Requirements, Screens). Update the
   files of the blocks you keep where your app differs. A requirement lands together with a test
   named by its ID, or with its ID on the `Manual` line, or CI fails with `coverage:`; so write
   the spec of a new area in the change that implements it.
@@ -161,7 +168,7 @@ Do this together with the demo blocks ("Demo and optional blocks" below).
   alike. Screen numbers are global: add the screens of deleted blocks (for example SCR-5, SCR-6
   and SCR-8 without characters and favorites) to the `Retired` line of a behavior file you keep. Do
   not renumber the remaining screens: the base comparison rejects it, as it reuses numbers.
-  The local command is in [doc/README.md](../README.md), Requirements.
+  The local command is in [doc/workflow.md](../workflow.md), Requirements.
 
 ## 5. Demo and optional blocks
 
@@ -203,7 +210,7 @@ a time; the "Removal checked" column says how far.
    `routes.g.dart` and `injection.config.dart` still refer to deleted classes until then,
    and `fvm flutter analyze` does not show it, because generated files are excluded from
    analysis.
-5. Run `fvm flutter gen-l10n`, then [doc/README.md](../README.md), Verification: analyze,
+5. Run `fvm flutter gen-l10n`, then [doc/workflow.md](../workflow.md), Verification: analyze,
    the import check, all tests and the format check. Run every test: some references fail only at
    run time, such as a DI registration or a list of tabs.
 6. Update the docs and the hosting pages listed for the block.
@@ -238,13 +245,12 @@ Edit:
   tests; the toggle groups and "opened from favorites" in the characters list and character
   details page tests; `delete_account_use_case_test.dart`.
 
-Docs and pages: `doc/spec/behavior/favorite.md` and `doc/spec/area/favorite.md`, and the
+Docs and pages: `doc/spec/behavior/favorite.md` and `doc/spec/implementation/favorite.md`, and the
 favorites parts of `doc/spec/behavior/navigation.md`, `character.md` (toggle and details states),
-`profile.md` and `doc/spec/area/profile.md`; the favorites rows and examples in
+`profile.md` and `doc/spec/implementation/profile.md`; the favorites rows and examples in
 `doc/spec/architecture.md` (`component/favorite_toggle/` in Folder structure and Inside
 `presentation/_shared`; the storage table in Local storage;
-Routing); the feature list
-in `README.md` and `doc/spec/product.md`; `hosting/privacy.html` and `hosting/delete-account.html`.
+Routing); the feature list in `doc/spec/product.md`; `hosting/privacy.html` and `hosting/delete-account.html`.
 
 Packages: none become unused; `hive_ce` still holds the characters cache.
 
@@ -285,12 +291,12 @@ Edit:
   `/character-list`; `app_config_test.dart` and `injection_test.dart` (config values);
   `notification_wiring_test.dart` uses `/character-list` routes only as examples.
 
-Docs and pages: `doc/spec/behavior/character.md`, `doc/spec/area/character.md` and the
-characters parts of `doc/spec/behavior/navigation.md`; the feature list in `README.md` and
+Docs and pages: `doc/spec/behavior/character.md`, `doc/spec/implementation/character.md` and the
+characters parts of `doc/spec/behavior/navigation.md`; the feature list in
 `doc/spec/product.md`; the sentence about the character use cases in
 `doc/spec/architecture.md`, Data flow (its naming examples may stay), and `image/` and
 `tile/` in its Folder structure and Inside `presentation/_shared`; the **Behavior:** line of
-`doc/spec/area/network.md`, which links `behavior/character.md`; `hosting/privacy.html` (the Rick and Morty API and the cached characters); `doc/guide/onboarding.md`, One request, end to end, and Reading order, which trace the characters list: retrace them through one of your own screens.
+`doc/spec/implementation/network.md`, which links `behavior/character.md`; `hosting/privacy.html` (the Rick and Morty API and the cached characters); `doc/README.md`, One request, end to end, and Reading order, which trace the characters list: retrace them through one of your own screens.
 
 Packages that may become unused: `cached_network_image_ce`, `stream_transform`; with B gone
 too, `hive_ce` and `hive_ce_flutter` (then also `initHive` in `bootstrap.dart` and the
@@ -325,11 +331,12 @@ Edit:
   `app_router_test.dart`.
 
 Docs and pages: `doc/spec/behavior/notification.md` and
-`doc/spec/area/notification.md`; `dialog/` in `doc/spec/architecture.md`, Folder
+`doc/spec/implementation/notification.md`; `dialog/` in `doc/spec/architecture.md`, Folder
 structure and Inside `presentation/_shared`; `doc/guide/store-release.md`, Push
 notifications, and the Firebase Cloud Messaging rows in "Declare the data"; the push row in
 `doc/guide/setup.md`, Services per platform;
-`README.md`; the push parts of `hosting/privacy.html`.
+the push parts of `doc/spec/product.md` (Scope, Not included yet) and of
+`hosting/privacy.html`.
 
 Packages: `firebase_messaging`, `flutter_local_notifications`. Core library desugaring in
 `android/app/build.gradle.kts` exists only for `flutter_local_notifications`
@@ -374,10 +381,10 @@ Edit:
   `failureAuth*` keys can stay; nothing produces them any more.
 
 Docs and pages: `doc/spec/behavior/auth.md`, `profile.md`, the auth parts of
-`navigation.md` and `observability.md`; `doc/spec/area/auth.md` and `profile.md`;
+`navigation.md` and `observability.md`; `doc/spec/implementation/auth.md` and `profile.md`;
 `doc/spec/architecture.md`, Dependency injection and Networking;
 `doc/spec/security.md`, Tokens and Personal data (the Firebase UID in crash reports);
-`doc/spec/area/network.md`, AuthInterceptor; the Email Address, User ID and linked Crash
+`doc/spec/implementation/network.md`, AuthInterceptor; the Email Address, User ID and linked Crash
 Data rows in `doc/guide/store-release.md`, "Declare the data"; the
 authentication line in `doc/spec/product.md`. Without sign-up, the in-app account deletion
 requirement does not apply: remove `hosting/delete-account.html` and its link in the store

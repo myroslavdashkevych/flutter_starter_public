@@ -160,13 +160,12 @@ your legal requirements in each market.
 
 ## 4. Push notifications
 
-- FCM runs in FID mode: `firebase_messaging_installation_id_enabled` in
-  `AndroidManifest.xml`, with `FirebaseMessaging.register()` and `onRegistered`.
-  [spec/area/notification.md](../spec/area/notification.md) has the details.
-- **A backend must send with the target `fid`.** Registration tokens from `getToken` are
-  not used.
+- FCM runs in FID mode
+  ([spec/implementation/notification.md](../spec/implementation/notification.md),
+  Registration).
+- **A backend must send with the target `fid`**, not with a registration token.
 - **Check any third-party push service for FID support before adopting it.**
-- The FID is only logged by the starter: a real app must send it to its backend.
+- **Send the FID to the backend:** the starter only logs it.
 - **iOS needs an APNs key** from a paid Apple Developer Program membership. Create the key
   in the Apple Developer portal and upload it in Firebase Console → Project settings →
   Cloud Messaging, in the prod project and in the dev project. Without it, `register()`

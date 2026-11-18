@@ -15,6 +15,7 @@ import 'package:flutter_starter/app/di/injection.dart';
 import 'package:flutter_starter/app/locale_resolution.dart';
 import 'package:flutter_starter/app/notification/background_handler.dart';
 import 'package:flutter_starter/app/notification/notification_wiring.dart';
+import 'package:flutter_starter/app/observability/bloc_logging.dart';
 import 'package:flutter_starter/app/observability/crash_reporting_talker_observer.dart';
 import 'package:flutter_starter/app/observability/crash_reporting_user_sync.dart';
 import 'package:flutter_starter/app/observability/error_handler.dart';
@@ -40,7 +41,6 @@ import 'package:flutter_starter/presentation/settings/bloc/settings_event.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:talker/talker.dart';
-import 'package:talker_bloc_logger/talker_bloc_logger.dart';
 
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -113,11 +113,7 @@ Future<void> _setUpObservability(
   final crashReporting = getIt<CrashReportingService>();
   talker.configure(observer: CrashReportingTalkerObserver(crashReporting));
   installErrorHandlers(crashReporting: crashReporting, talker: talker);
-  Bloc.observer = TalkerBlocObserver(
-    talker: talker,
-    // States hold user data such as the email.
-    settings: TalkerBlocLoggerSettings(enabled: config.flavor != Flavor.prod),
-  );
+  Bloc.observer = createBlocObserver(talker: talker, flavor: config.flavor);
 
   // Settings are loaded here because the first event needs the stored choice.
   // The first frame uses them too (SET-4). Waiting for isLoaded, not for the

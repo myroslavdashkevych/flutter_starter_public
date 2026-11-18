@@ -1,7 +1,7 @@
 # Notifications
 
 Push notifications through Firebase Cloud Messaging. Not tied to an account.
-Implementation: [area/notification.md](../area/notification.md).
+Implementation: [implementation/notification.md](../implementation/notification.md).
 
 ## Requirements
 
@@ -29,8 +29,9 @@ Implementation: [area/notification.md](../area/notification.md).
   as the system settings show it.
   - GIVEN the app is in the foreground on Android WHEN a message arrives THEN a notification is
     shown on the `general` channel
-- **NTF-5** On iOS the code is present, but delivery needs an APNs key, which is not configured. Until then registration
-  fails on every launch; this is logged as a warning and not sent to Crashlytics.
+- **NTF-5** On iOS the code is present, but delivery needs an APNs key, which is not
+  configured. Until then registration fails on every launch; this is logged as a warning and
+  not sent to Crashlytics.
   - GIVEN iOS without an APNs key WHEN the app launches THEN registration fails, a warning is
     logged and no crash report is sent
 
@@ -58,10 +59,10 @@ Notifications are not affected by the "Share usage data" switch (SET-8).
 
 ## Implementation notes
 
-- NTF-1: where the permission flow runs: [area/notification.md](../area/notification.md),
+- NTF-1: where the permission flow runs: [implementation/notification.md](../implementation/notification.md),
   Domain.
 - NTF-6: why a launch from a notification starts on `/character-list`:
-  [area/notification.md](../area/notification.md), App wiring.
+  [implementation/notification.md](../implementation/notification.md), App wiring.
 
 Manual: NTF-8
 

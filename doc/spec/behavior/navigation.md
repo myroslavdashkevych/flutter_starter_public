@@ -32,11 +32,10 @@ StatefulShellRoute (bottom navigation, presentation/home_shell)
 - **NAV-4** Authentication is optional: characters, character details and settings work without
   signing in, and no route requires a signed-in user.
   - WHEN a guest opens `/character-list`, `/character-list/:id` or `/settings` THEN the page is
-    shown
-    without a sign-in step
+    shown without a sign-in step
   - WHEN a guest reaches `/profile/favorite-list` THEN that page shows a sign-in prompt (FAV-6)
-- **NAV-5** A signed-in user who navigates to an auth route is redirected to `/profile`. There
-  is no other redirect.
+- **NAV-5** A signed-in user who navigates to an auth route is redirected to `/profile`. No
+  other redirect depends on the auth state.
   - GIVEN the user is signed in WHEN they navigate to `/sign-in`, `/sign-up` or
     `/reset-password` THEN `/profile` is shown
 - **NAV-6** After a successful sign-in or sign-up the user lands on `/profile`; the whole auth
