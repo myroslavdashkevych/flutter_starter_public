@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_starter/data/character/data_source/character_hive_data_source.dart';
+import 'package:flutter_starter/shared/utils/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive_ce.dart';
 import 'package:mocktail/mocktail.dart';
@@ -16,6 +17,8 @@ class _MockBox extends Mock implements LazyBox<String> {}
 
 void main() {
   final talker = Talker(settings: TalkerSettings(useConsoleLogs: false));
+  final now = DateTime.utc(2026, 11, 17, 12);
+  final clock = Clock.from(() => now);
 
   group('with a real box', () {
     late Directory directory;
@@ -31,7 +34,7 @@ void main() {
     setUp(() {
       directory = Directory.systemTemp.createTempSync('character_cache_test');
       Hive.init(directory.path);
-      dataSource = CharacterHiveDataSource(Hive, talker);
+      dataSource = CharacterHiveDataSource(Hive, clock, talker);
     });
 
     tearDown(() async {
@@ -40,13 +43,26 @@ void main() {
     });
 
     test('a written page is read back with its fetch time', () async {
-      final before = DateTime.now();
       await dataSource.writePage(page: 2, query: 'rick', dto: testPageDto());
 
       final record = await dataSource.readPage(page: 2, query: 'rick');
 
       expect(record!.data, testPageDto());
-      expect(record.fetchedAt.isBefore(before), isFalse);
+      expect(record.fetchedAt, now);
+    });
+
+    test('CHR-10: a written record stores fetchedAt in UTC', () async {
+      await dataSource.writeCharacter(testCharacterDto(1));
+
+      final box = await Hive.openLazyBox<String>(
+        CharacterHiveDataSource.boxName,
+      );
+      final stored =
+          jsonDecode((await box.get('character:1'))!) as Map<String, dynamic>;
+      final record = await dataSource.readCharacter(1);
+
+      expect(stored['fetchedAt'], '2026-11-17T12:00:00.000Z');
+      expect(record!.fetchedAt.isUtc, isTrue);
     });
 
     test('pages are stored per page and query', () async {
@@ -106,7 +122,7 @@ void main() {
         'character:1',
         jsonEncode({
           'schemaVersion': 0,
-          'fetchedAt': DateTime.now().toIso8601String(),
+          'fetchedAt': now.toIso8601String(),
           'data': testCharacterDto(1).toJson(),
         }),
       );
@@ -120,7 +136,7 @@ void main() {
         'character:2',
         jsonEncode({
           'schemaVersion': 1,
-          'fetchedAt': DateTime.now().toIso8601String(),
+          'fetchedAt': now.toIso8601String(),
           'data': {'id': 'wrong'},
         }),
       );
@@ -130,14 +146,17 @@ void main() {
     });
 
     group('evictExpired', () {
-      String envelope({required int ageInDays, int schemaVersion = 1}) =>
-          jsonEncode({
-            'schemaVersion': schemaVersion,
-            'fetchedAt': DateTime.now()
-                .subtract(Duration(days: ageInDays))
-                .toIso8601String(),
-            'data': testCharacterDto(1).toJson(),
-          });
+      String envelope({
+        int ageInDays = 0,
+        Duration? age,
+        int schemaVersion = 1,
+      }) => jsonEncode({
+        'schemaVersion': schemaVersion,
+        'fetchedAt': now
+            .subtract(age ?? Duration(days: ageInDays))
+            .toIso8601String(),
+        'data': testCharacterDto(1).toJson(),
+      });
 
       Future<Iterable<dynamic>> cachedKeys() async =>
           (await Hive.openLazyBox<String>(CharacterHiveDataSource.boxName))
@@ -155,6 +174,20 @@ void main() {
           expect(await cachedKeys(), ['character:2']);
         },
       );
+
+      test('CHR-13: eviction deletes a record exactly maxAge old and keeps one '
+          'a second younger', () async {
+        const maxAge = CharacterHiveDataSource.maxAge;
+        await putRaw('character:1', envelope(age: maxAge));
+        await putRaw(
+          'character:2',
+          envelope(age: maxAge - const Duration(seconds: 1)),
+        );
+
+        await dataSource.evictExpired();
+
+        expect(await cachedKeys(), ['character:2']);
+      });
 
       test('deletes records with another schema or unreadable', () async {
         await putRaw('character:1', envelope(ageInDays: 0, schemaVersion: 0));
@@ -194,7 +227,7 @@ void main() {
     setUp(() {
       hive = _MockHive();
       box = _MockBox();
-      dataSource = CharacterHiveDataSource(hive, talker);
+      dataSource = CharacterHiveDataSource(hive, clock, talker);
       when(() => box.get(any<dynamic>())).thenAnswer((_) async => null);
     });
 

@@ -1,7 +1,7 @@
 # Settings
 
 Theme, language, usage data sharing, privacy policy and app info. Available to guests.
-Implementation: [area/settings.md](../area/settings.md).
+Implementation: [implementation/settings.md](../implementation/settings.md).
 
 ## Requirements
 
@@ -79,7 +79,7 @@ Implementation: [area/settings.md](../area/settings.md).
 
 - SET-7: limits of the switch and how to make collection opt-in:
   [guide/store-release.md](../../guide/store-release.md), Switching to opt-in. Mechanism:
-  [area/observability.md](../area/observability.md), Usage data collection.
+  [implementation/observability.md](../implementation/observability.md), Usage data collection.
 
 Manual: SET-8
 

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_starter/data/_shared/data_source/network/auth_interceptor.dart';
 import 'package:flutter_starter/data/_shared/data_source/network/dio_factory.dart';
 import 'package:flutter_starter/data/_shared/data_source/network/retry_interceptor.dart';
@@ -5,6 +6,8 @@ import 'package:flutter_starter/data/_shared/data_source/network/token_provider.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:talker/talker.dart';
+
+import '../../../../helper/fake_http_client_adapter.dart';
 
 class _MockTokenProvider extends Mock implements TokenProvider {}
 
@@ -100,4 +103,33 @@ void main() {
     expect(settings.printResponseData, isFalse);
     expect(settings.printErrorData, isFalse);
   });
+
+  test(
+    'OBS-6: a request is written to Talker, with and without bodies',
+    () async {
+      // The log screen shows the Talker history. Bodies are logged in dev only.
+      for (final logBodies in [true, false]) {
+        final logTalker = Talker(
+          settings: TalkerSettings(useConsoleLogs: false),
+        );
+        final dio =
+            createPublicDio(
+                baseUrl: 'https://public.invalid',
+                talker: logTalker,
+                logBodies: logBodies,
+              )
+              ..httpClientAdapter = FakeHttpClientAdapter(
+                (_) => ResponseBody.fromString('{}', 200),
+              );
+
+        await dio.get<void>('/a');
+
+        expect(
+          logTalker.history.map((data) => data.key),
+          containsAll([TalkerKey.httpRequest, TalkerKey.httpResponse]),
+          reason: 'logBodies: $logBodies',
+        );
+      }
+    },
+  );
 }

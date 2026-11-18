@@ -9,6 +9,7 @@ import 'package:flutter_starter/data/favorite/model/favorite_record_dto.dart';
 import 'package:flutter_starter/domain/_shared/wrapper/result/failure.dart';
 import 'package:flutter_starter/domain/_shared/wrapper/result/result.dart';
 import 'package:flutter_starter/domain/entity/character.dart';
+import 'package:flutter_starter/shared/utils/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive_ce.dart';
 import 'package:mocktail/mocktail.dart';
@@ -31,9 +32,15 @@ void main() {
   late Directory directory;
   late Talker talker;
 
+  // Every read moves the time one second forward, so favorites added one
+  // after another have distinct times.
+  var now = DateTime.utc(2026, 11, 17, 12);
+  final clock = Clock.from(() => now = now.add(const Duration(seconds: 1)));
+
   FavoriteRepositoryImpl build([FavoriteHiveDataSource? dataSource]) =>
       FavoriteRepositoryImpl(
         dataSource ?? FavoriteHiveDataSource(Hive, talker),
+        clock,
         talker,
       );
 
@@ -127,7 +134,6 @@ void main() {
     test('FAV-5, FAV-7: survives a restart, newest first', () async {
       final repository = build();
       await repository.toggle(alice, testCharacter(1));
-      await Future<void>.delayed(const Duration(milliseconds: 2));
       await repository.toggle(alice, testCharacter(2));
       expect(await favoriteIds(repository), [2, 1]);
       await Hive.close();
@@ -173,6 +179,16 @@ void main() {
       expect(stored['schemaVersion'], 1);
       expect(DateTime.tryParse(stored['addedAt'] as String), isNotNull);
       expect((stored['data'] as Map<String, dynamic>)['name'], 'Character 1');
+    });
+
+    test('FAV-5: a new favorite stores addedAt in UTC', () async {
+      await build().toggle(alice, testCharacter(1));
+
+      final box = await openBox(alice);
+      final stored = jsonDecode((await box.get('1'))!) as Map<String, dynamic>;
+
+      expect(stored['addedAt'], now.toIso8601String());
+      expect(stored['addedAt'], endsWith('Z'));
     });
 
     test('FAV-8: a record with another schema is skipped and kept', () async {

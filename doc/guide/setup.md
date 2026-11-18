@@ -1,5 +1,34 @@
 # Setup
 
+## Quick start
+
+You need:
+
+- [FVM](https://fvm.app): installs the Flutter version from `.fvmrc` ("FVM").
+- Xcode (iOS) and Android Studio or the Android SDK (Android).
+- FlutterFire CLI: every iOS build calls it, and it generates the Firebase configs
+  ("Firebase").
+- Firebase CLI: only for `flutterfire configure`, which uses it and its login, for
+  deploying the hosted pages and for uploading Crashlytics symbols.
+
+Then, from the project root:
+
+```bash
+fvm install
+fvm flutter pub get
+fvm dart run build_runner build
+fvm flutter gen-l10n
+fvm flutter run --flavor dev --dart-define-from-file=config/dev.json
+```
+
+The repository ships without Firebase configs ("Committing Firebase configs"), so
+`flutter run` works only after you connect your own Firebase projects
+([new-project.md](new-project.md), Connect your own Firebase projects). Analyze and the tests
+work without them.
+
+For prod: `--flavor prod --dart-define-from-file=config/prod.json` ("Flavors"). When
+building, running or analyzing fails: [troubleshooting.md](troubleshooting.md).
+
 ## Identifiers
 
 | | dev | prod |
@@ -20,25 +49,28 @@ for prod. The prod ID is user-facing: by default it forms the auth domain
 
 - `.fvmrc` tracks the `stable` channel (`"flutter": "stable"`), not a fixed
   release. This is a deliberate choice: the starter always uses the current
-  stable Flutter (3.47.7 at creation time). The trade-off: CI and fresh clones pick
-  up a new stable release as soon as it ships, so a Flutter release can break the
-  build without any change in the repository. A project created from the template
+  stable Flutter; the version it was last verified with is in
+  [spec/tech-stack.md](../spec/tech-stack.md), Verified toolchain. The trade-off: CI and
+  fresh clones pick up a new stable release as soon as it ships, so a Flutter release can
+  break the build without any change in the repository. A project created from the template
   may pin an exact version instead (`fvm use <version>`).
 - All commands use `fvm flutter` / `fvm dart`.
-- To upgrade Flutter: change `.fvmrc`, run `fvm install`, then the full
-  every step of [doc/README.md](../README.md), Verification. Changing the FVM setup needs the user's
-  approval (global rule).
+- To upgrade Flutter: change `.fvmrc`, run `fvm install`, then every step of
+  [doc/workflow.md](../workflow.md), Verification, and update the verified toolchain
+  ([spec/tech-stack.md](../spec/tech-stack.md), Verified toolchain). Changing the FVM setup
+  needs the user's approval (global rule).
 
 ## Platforms
 
 Android and iOS only. Web, macOS, Windows and Linux folders are not created.
 
 - Android `minSdk`: `flutter.minSdkVersion` in `android/app/build.gradle.kts`, which is
-  24 on Flutter 3.50.0. It is not pinned, so it follows the Flutter version from `.fvmrc`.
+  24 on the verified Flutter version ([spec/tech-stack.md](../spec/tech-stack.md),
+  Verified toolchain). It is not pinned, so it follows the Flutter version from `.fvmrc`.
 - iOS deployment target: 15.0, set in `ios/Runner.xcodeproj/project.pbxproj` for all six
   build configurations.
-- Android `compileSdk` and `targetSdk`: 36, set explicitly in
-  `android/app/build.gradle.kts`.
+- Android `compileSdk` and `targetSdk`: 37, set explicitly in
+  `android/app/build.gradle.kts`. `flutter_local_notifications` 23 requires `compileSdk` 37.
 
 ## Flavors
 
@@ -69,7 +101,7 @@ Android and iOS only. Web, macOS, Windows and Linux folders are not created.
   the default of the "Share usage data" setting. `AppConfig` reads them. Only non-secret
   values: [spec/security.md](../spec/security.md), Secrets and the repository.
 - Every run needs `--flavor` and `--dart-define-from-file`; the commands are in
-  `README.md` (Quick start) and `CLAUDE.md` (Commands).
+  "Quick start" and `CLAUDE.md` (Commands).
 - Android Studio: the `dev` and `prod` run configurations are committed in `.run/`
   and appear in the run configuration list. Point Settings → Languages & Frameworks
   → Flutter → Flutter SDK path to the project's `.fvm/flutter_sdk`, so the IDE uses
@@ -87,11 +119,9 @@ Android and iOS only. Web, macOS, Windows and Linux folders are not created.
 
 ### Generate configs (run by the user)
 
-The agent prepares these commands and the user runs them in their own terminal.
-The agent cannot run them: they need the user's Google login, and the global
-Claude Code hook blocks any command that mentions `google-services.json` or
-`GoogleService-Info.plist`. Check flags against `flutterfire configure --help` of
-the installed version before running.
+The agent prepares these commands and the user runs them in their own terminal: they need the
+user's Google login ([spec/security.md](../spec/security.md), Agent access). Check flags
+against `flutterfire configure --help` of the installed version before running.
 
 ```bash
 # dev: run once per iOS build configuration (Debug-dev, Profile-dev, Release-dev)
@@ -119,8 +149,9 @@ flutterfire configure \
   --ios-out=ios/flavors/prod/GoogleService-Info.plist
 ```
 
-Checked against FlutterFire CLI 1.4.1. `--yes` lets repeated runs overwrite the
-Dart options file without a prompt. Besides the config files, the command adds the
+Checked against the FlutterFire CLI version in
+[spec/tech-stack.md](../spec/tech-stack.md), Verified toolchain. `--yes` lets repeated runs
+overwrite the Dart options file without a prompt. Besides the config files, the command adds the
 Google Services and Crashlytics plugins to the Gradle files, adds two build phases
 to the `Runner` target and writes `firebase.json` in the project root. Those build
 phases call `flutterfire` and read `firebase.json`, so every iOS build needs the
@@ -226,11 +257,11 @@ there.
 `.github/workflows/ci.yml` runs on every pull request and on pushes to `main` and
 `develop`. It installs the Flutter version from `.fvmrc` with `subosito/flutter-action`,
 which reads that file directly, generates code and localizations, and then runs the
-checks of [doc/README.md](../README.md), Verification: the format check, analyze, the
+checks of [doc/workflow.md](../workflow.md), Verification: the format check, analyze, the
 import rules ([spec/architecture.md](../spec/architecture.md), Import rules), the spec
-conventions (`tool/check_spec.dart`, [doc/README.md](../README.md), Requirements) and the
-tests. A fresh checkout has no generated files, so `build_runner` needs no
-`--delete-conflicting-outputs`.
+conventions (`tool/check_spec.dart`, [doc/workflow.md](../workflow.md), Requirements, whose
+toolchain warning appears as an annotation and never fails the job) and the
+tests.
 
 The spec check runs with `--base`: the target branch (`origin/<base_ref>`) on a pull request,
 the previous tip (`github.event.before`) on a push, and no base on a branch's first push. It
@@ -240,7 +271,7 @@ this the checkout uses
 
 The last step warns, once per folder, while `doc/change/` holds anything besides
 `_template`. A change may land in several pull requests, so its folder stays in `develop` until
-the last one deletes it ([doc/README.md](../README.md), Changes). The warning keeps a
+the last one deletes it ([doc/workflow.md](../workflow.md), Changes). The warning keeps a
 forgotten folder visible and never fails the job.
 
 The runner may call `flutter`/`dart` directly: the FVM-only rule applies to work
@@ -276,7 +307,7 @@ day) and opens version update pull requests into `develop`
   comes in its own, because it may need code changes.
 - Commits and titles start with `chore:` (`pub`) or `ci:` (actions). Branches are named
   `dependabot/<ecosystem>/...`, the exception to `<type>/<slug>`
-  ([doc/README.md](../README.md), Changes).
+  ([doc/workflow.md](../workflow.md), Changes).
 - CI runs on them as on any pull request. A `pub` update changes `pubspec.yaml` and
   `pubspec.lock`; check its changelog, and merge it yourself once CI passes.
 - `pub` uses `versioning-strategy: increase`: an update raises the lower bound in
@@ -299,7 +330,7 @@ successful last check.
 
 A pull request's CI result is only valid for the `develop` it ran against. When another pull
 request merges first, an ID both changes added passes CI in each of them and collides in
-`develop` ([doc/README.md](../README.md), Requirements). Which safeguard applies depends on
+`develop` ([doc/workflow.md](../workflow.md), Requirements). Which safeguard applies depends on
 the GitHub plan:
 
 - **If branch protection is available** (a public repository, or a private one on GitHub Pro,
@@ -312,6 +343,65 @@ the GitHub plan:
   checks the merge with the current `develop`) or merge `develop` into the branch, and wait
   for CI to pass. If a collision slips through, CI fails on the push to `develop`; fix it right away by
   renumbering the second change's IDs.
+
+## Theme
+
+The theme in `lib/presentation/_shared/theme` sets the colors and fonts of the UI; custom
+icons go there too. Who owns the look:
+[doc/workflow.md](../workflow.md), Source of truth; how widgets read it:
+[spec/code-style.md](../spec/code-style.md), Widgets.
+
+### Colors
+
+- `theme/const/app_color.dart` (`AppColor`) holds every color value, as seeds. `AppTheme`
+  builds the light and the dark `ColorScheme` from `AppColor.seed` with
+  `ColorScheme.fromSeed`.
+- Roles that `ColorScheme` lacks (`success`, `warning`) are in `AppColorExtension`
+  (`theme/app_color_extension.dart`). Each role and its on-color are `primary` and
+  `onPrimary` of a scheme built from the role's seed.
+- To change a color, replace its seed. `fromSeed` does not use the seed as is: `primary`
+  keeps its hue, with tone and chroma set by Material 3. When the design fixes an exact
+  color, override `primary:` in `AppTheme`; its contrast is then checked only by ACC-3.
+- To add a role: a seed in `AppColor`, a field in `AppColorExtension` (constructor, `of`,
+  `copyWith`, `lerp`), and the pair in `app_color_extension_test.dart`, which fails when an
+  on-color is below WCAG AA contrast. ACC-3 checks the text of every screen in both themes.
+- After changing `AppColor.seed`, check the splash colors ("Native splash").
+
+### Fonts
+
+- Files: `assets/font/<family>/`, static TTFs of weights 400 and 500 (the ones the
+  Material 3 text theme uses), with the font's `OFL.txt` in the same folder. Static files
+  work with the `fontWeight` of the text theme without extra code.
+- The license must allow bundling in an app, such as the SIL Open Font License 1.1, and the
+  font must cover Cyrillic as long as the app ships Ukrainian. Fonts are bundled, not loaded by a
+  package at run time: they work offline and send no request to a font service.
+- Each family is declared under `flutter: fonts:` in `pubspec.yaml`, with `weight: 500` on
+  the Medium file. The family name there equals the value in `theme/const/app_font.dart`
+  (`AppFont`).
+- `AppTheme` sets `AppFont.heading` on the display, headline and title roles and
+  `AppFont.body` on the rest. For one family, give both the same name.
+- Tests render text with the test font, so only the running app shows the fonts: check an
+  app bar title (heading) and list text (body) in both languages.
+
+### Icons
+
+- UI icons come from Material `Icons` (`uses-material-design: true` in `pubspec.yaml`).
+- Icons the design adds come as an icon font, so they take their color and size from the
+  theme like any `Icon` and need no package:
+  1. Build the font from single-color SVGs with FlutterIcon (fluttericon.com), which also
+     gives the Dart class.
+  2. Put the TTF and its license in `assets/font/<name>/` and declare it under
+     `flutter: fonts:`.
+  3. Put the `IconData` constants in one class in `theme/const/` (`app_icon.dart` ->
+     `AppIcon`): `static const IconData star = IconData(0xe800, fontFamily: 'AppIcon');`.
+     `fontFamily` is the family name from `pubspec.yaml`. Rewrite the class the generator
+     gives to follow [spec/code-style.md](../spec/code-style.md) instead of excluding it
+     from analysis.
+  4. Keep every `IconData` `const`: release builds keep only the used glyphs, and a
+     non-constant `IconData` fails the release build.
+- Multi-color icons and illustrations need an SVG package. Adding one is a `pubspec.yaml`
+  change through the usual change process.
+- Launcher icons are separate: "Launcher icons".
 
 ## Native splash
 
@@ -389,11 +479,28 @@ required reason API directly, declare it here. How to check:
 ## Change reviewer (Claude Code)
 
 Step 4 of the change workflow runs the `change-reviewer` agent
-(`.claude/agents/change-reviewer.md`). Its
-Bash calls go through the hook `.claude/hooks/review-bash.sh`, which needs:
+(`.claude/agents/change-reviewer.md`). Its limits are the agent access policy, as for every
+session ([spec/security.md](../spec/security.md), Agent access), so it needs **workspace
+trust** accepted for the project folder in Claude Code: until then Claude Code does not apply
+the project's `.claude/settings.json`.
 
-- **`jq`** on the machine (`brew install jq` on macOS; GitHub's Ubuntu runners have it).
-  Without it the hook blocks every command of the agent, so a review that cannot run any
-  check usually means `jq` is missing.
-- **Workspace trust** accepted for the project folder in Claude Code. Until then Claude Code
-  does not run the hook, and the agent's limits rest on its instructions alone.
+## Agent sandbox
+
+`.claude/settings.json` turns on the Claude Code sandbox (Seatbelt on macOS). It needs no
+install on macOS. The policy rules: [spec/security.md](../spec/security.md), Agent access.
+What each sandbox entry is for:
+
+- `filesystem.allowWrite`: the caches Flutter, Dart and FVM write outside the project
+  (`~/fvm`, `~/.pub-cache`, `~/.dartServer`, `~/.dart-tool`, `~/.flutter`,
+  `~/.config/flutter`).
+- `filesystem.allowRead`: `android/local.properties`, which the Flutter tool reads and rewrites
+  on every command. Claude's file tools still cannot read it.
+- `network.allowLocalBinding`: `flutter test` starts a local HTTP server. A sandboxed process
+  can then listen on every interface, not only `localhost`.
+- `network.deniedDomains`: GitHub, so no command can push.
+- No `excludedCommands` ([spec/security.md](../spec/security.md), Agent access, `sandbox`).
+  Inside the sandbox, `fvm flutter build` and `fvm flutter run` fail: Gradle needs the network
+  and `~/.gradle`.
+
+`git status` prints "Operation not permitted" for the Firebase configs inside the sandbox
+and still works.

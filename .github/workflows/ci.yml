@@ -51,10 +51,10 @@ jobs:
           fi
       - run: flutter test
       # A change may land in several pull requests, and its last one deletes
-      # the change folder (doc/README.md, Changes). This step only warns, so a
+      # the change folder (doc/workflow.md, Changes). This step only warns, so a
       # forgotten folder stays visible without failing the job.
       - name: Change folders in flight
         run: |
           for left in $(find doc/change -mindepth 1 -maxdepth 1 ! -name _template); do
-            echo "::warning::$left is still here: the last pull request of its change deletes it (doc/README.md, Changes)"
+            echo "::warning::$left is still here: the last pull request of its change deletes it (doc/workflow.md, Changes)"
           done

@@ -1,7 +1,7 @@
 # Profile
 
 Guest or account view, sign-out and account deletion. Implementation:
-[area/profile.md](../area/profile.md).
+[implementation/profile.md](../implementation/profile.md).
 
 ## Requirements
 
@@ -60,7 +60,7 @@ require in-app account deletion for apps that allow sign-up.
 
 ## Implementation notes
 
-- PRF-5: why the password is checked first: [area/profile.md](../area/profile.md), Use case:
+- PRF-5: why the password is checked first: [implementation/profile.md](../implementation/profile.md), Use case:
   `domain/use_case/auth/delete_account_use_case.dart`.
 
 Retired: none

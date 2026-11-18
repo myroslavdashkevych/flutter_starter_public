@@ -1,6 +1,6 @@
-# Area: profile
+# Implementation: profile
 
-**Areas:** `domain/use_case/auth/delete_account_use_case.dart`; feature `presentation/profile`.
+**Code:** `domain/use_case/auth/delete_account_use_case.dart`; feature `presentation/profile`.
 Behavior: [behavior/profile.md](../behavior/profile.md).
 
 ## Presentation

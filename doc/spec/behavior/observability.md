@@ -1,7 +1,7 @@
 # Observability
 
 Crash reporting, analytics and logs. Implementation:
-[area/observability.md](../area/observability.md).
+[implementation/observability.md](../implementation/observability.md).
 
 ## Requirements
 
@@ -22,10 +22,12 @@ Crash reporting, analytics and logs. Implementation:
 - **OBS-5** Feature events are listed in each behavior file (AUTH-8, CHR-17, CHR-18, PRF-8,
   FAV-11) and are sent through `AnalyticsService`.
   - WHEN a feature event fires THEN it goes through `AnalyticsService`
-- **OBS-6** Talker logs HTTP traffic, and Bloc transitions outside `prod`. The log screen is in
-  `dev` only (NAV-7, SET-11).
+- **OBS-6** Talker logs HTTP traffic in every flavor, with bodies only outside `prod`, and Bloc
+  transitions only outside `prod` (errors only in `prod`). The log screen is in `dev` only
+  (NAV-7, SET-11).
   - GIVEN the `dev` flavor WHEN an HTTP request runs THEN it appears in the log screen
   - GIVEN the `prod` flavor THEN Bloc transitions are not logged (errors only)
+  - GIVEN the `prod` flavor WHEN an HTTP request runs THEN it is logged without its bodies
 - **OBS-7** Logs never contain a password.
   - GIVEN the `dev` flavor WHEN the user submits the sign-in, sign-up or delete-account form
     THEN no log entry contains the password

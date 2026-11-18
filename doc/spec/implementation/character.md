@@ -1,6 +1,6 @@
-# Area: character
+# Implementation: character
 
-**Areas:** `domain/entity/character.dart`,
+**Code:** `domain/entity/character.dart`,
 `domain/repository/character_repository.dart`, `domain/use_case/character`, `data/character`,
 `presentation/character_list`,
 `presentation/character_detail`. Behavior: [behavior/character.md](../behavior/character.md).
@@ -42,14 +42,15 @@ Rick and Morty API, characters endpoint, via `publicDio` (no auth header).
   starter's example of a cache ([architecture.md](../architecture.md), Local storage):
   - key: `list:page={page}:q={query}` and `character:{id}`;
   - envelope, `CachedRecordDto<T>`:
-    `{ "schemaVersion": 1, "fetchedAt": <iso8601>, "data": <dto.toJson()> }`;
+    `{ "schemaVersion": 1, "fetchedAt": <iso8601 UTC>, "data": <dto.toJson()> }`;
   - TTL from `CHARACTER_CACHE_TTL_MINUTES` (default 30);
   - `maxAge`: 90 days;
   - writing a page also writes `character:{id}` for each of its characters, so details open
     offline for everything in a cached list;
   - the box is opened on first use; parallel first calls share one opening `Future`.
 - A record that is unreadable or has another `schemaVersion` is refetched, and eviction
-  deletes old records, as for every cache (Local storage, Cache or user data; CHR-13).
+  deletes old records, as for every cache ([architecture.md](../architecture.md), Cache or
+  user data; CHR-13).
 - The API base URL comes from `RICK_AND_MORTY_API_BASE_URL`: it is the base of the whole API,
   not of the characters endpoint.
 - Strategy:

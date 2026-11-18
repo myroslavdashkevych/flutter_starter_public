@@ -1,6 +1,6 @@
-# Area: settings
+# Implementation: settings
 
-**Areas:** `domain/entity/app_settings.dart`, `domain/repository/settings_repository.dart`,
+**Code:** `domain/entity/app_settings.dart`, `domain/repository/settings_repository.dart`,
 `domain/use_case/settings` (usage data collection:
 [observability.md](observability.md)), `data/settings`, `presentation/settings`. Behavior:
 [behavior/settings.md](../behavior/settings.md).

@@ -4,8 +4,8 @@ How code is written inside a file: names, the order of class members, methods, w
 language usage.
 
 **Not here:** where a file lives, what it may import and which patterns a layer uses
-([architecture.md](architecture.md)); the change process and test names
-([doc/README.md](../README.md)); packages ([tech-stack.md](tech-stack.md)).
+([architecture.md](architecture.md)); the change workflow and test names
+([doc/workflow.md](../workflow.md)); packages ([tech-stack.md](tech-stack.md)).
 
 ## Sources
 
@@ -186,9 +186,11 @@ Members follow this order, with a blank line between groups (Flutter style guide
 - A local variable inside `build` that names a widget is allowed. (project: it names a part
   of the tree without the cost of a class, and rebuilds with `build` anyway)
 - Spacing comes from `AppSpacing` (`presentation/_shared/theme/const/app_spacing.dart`),
-  colors from `Theme.of(context).colorScheme`, text styles from `textTheme`; no literal design
-  values in widgets. (project: the theme owns the look, [doc/README.md](../README.md),
-  Source of truth)
+  colors from `Theme.of(context).colorScheme` or, for the roles it lacks (`success`,
+  `warning`), from `Theme.of(context).appColor`, text styles and their fonts from
+  `textTheme`; no literal design values in widgets. `AppColor` and `AppFont` are read only by
+  the theme files (checked in review). (project: the theme owns the look,
+  [doc/workflow.md](../workflow.md), Source of truth)
 
 ## Language usage
 

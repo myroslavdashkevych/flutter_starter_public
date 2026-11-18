@@ -1,7 +1,7 @@
 # Auth
 
 Email and password authentication with Firebase Auth. Optional: see NAV-4.
-Implementation: [area/auth.md](../area/auth.md).
+Implementation: [implementation/auth.md](../implementation/auth.md).
 
 ## Requirements
 
@@ -63,6 +63,6 @@ After a successful sign-in or sign-up the user lands on `/profile` (NAV-6).
 
 ## Implementation notes
 
-- AUTH-7: how the Firebase errors are handled: [area/auth.md](../area/auth.md), Data.
+- AUTH-7: how the Firebase errors are handled: [implementation/auth.md](../implementation/auth.md), Data.
 
 Retired: none

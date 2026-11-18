@@ -13,10 +13,10 @@ when a project starts designing.
 ## Source of truth
 
 Who owns what (spec, design, theme tokens) and what to do on a conflict:
-[doc/README.md](../README.md), Source of truth. For design work:
+[doc/workflow.md](../workflow.md), Source of truth. For design work:
 
-- The theme in `lib/presentation/_shared/theme` is Material 3, `ColorScheme.fromSeed`, light
-  and dark.
+- The theme in `lib/presentation/_shared/theme` is Material 3, light and dark. How its
+  colors, fonts and icons are set up: [guide/setup.md](../guide/setup.md), Theme.
 - A design system's tokens are mapped into the theme, never hard-coded in widgets.
 
 ## Screens
@@ -28,7 +28,7 @@ Who owns what (spec, design, theme tokens) and what to do on a conflict:
   `Design: doc/design/screen/favorite/favorite-list--empty.webp, <link>`.
 - Source files (`.fig`) are not stored in the repository.
 - A screen with an approved design is implemented from its files in `screen/`.
-- A screen without an approved design: [doc/README.md](../README.md), Screens
+- A screen without an approved design: [doc/workflow.md](../workflow.md), Screens
   (`Design: pending`).
 
 ## Repository size

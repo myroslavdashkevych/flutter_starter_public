@@ -11,6 +11,9 @@ targets:
           - lib/domain/**
           - lib/data/**
           - lib/presentation/**
+        options:
+          # doc/spec/architecture.md, Time
+          date_time_utc: true
       retrofit_generator:
         generate_for:
           - lib/data/**/data_source/**

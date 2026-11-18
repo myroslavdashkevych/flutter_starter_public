@@ -8,9 +8,14 @@ what is not included yet.
 
 ## Vision
 
-`flutter_starter` is a GitHub template for new Flutter apps (Android and iOS). It is a small
-working demo app that shows the agreed architecture, stack and conventions end to end. Every
-new project starts as a copy of it, so clarity and consistency matter more than feature count.
+`flutter_starter` is a GitHub template for small and medium Flutter apps (Android and iOS)
+that need to reach the App Store and Google Play fast. It is a small working demo app that
+shows the agreed architecture, stack and conventions end to end. Every new project starts as a
+copy of it, so clarity and consistency matter more than feature count.
+
+It is built for developers and AI agents, with the focus on developers working together with
+agents: both follow the same documented rules and change process, with the focus on
+maintainability and scalability.
 
 ## Users
 

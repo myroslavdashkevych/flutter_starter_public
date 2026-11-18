@@ -11,7 +11,7 @@ const _ids = ProjectIds(
 
 const _pubspec = '''
 name: flutter_starter
-description: "Flutter starter template for new mobile apps."
+description: "Flutter starter for small and medium mobile apps, built for developers working with AI agents."
 publish_to: "none"
 dependencies:
   flutter_starter_helper: ^1.0.0

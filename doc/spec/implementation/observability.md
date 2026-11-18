@@ -1,6 +1,6 @@
-# Area: observability
+# Implementation: observability
 
-**Areas:** `app/observability`, `shared/logging`, `domain/_shared/service`,
+**Code:** `app/observability`, `shared/logging`, `domain/_shared/service`,
 `domain/use_case/observability`,
 `domain/use_case/settings/set_usage_data_collection_use_case.dart`, `data/_shared/service`,
 `app/router/screen_view_observer.dart`, `app/bootstrap.dart`.
@@ -11,8 +11,10 @@ How logs, crash reports, analytics and usage data collection work. The rules the
 
 ## Logging
 
-- `TalkerBlocObserver` is wired in `app`. Outside `prod` it logs events with their
-  `toString()` (OBS-7). The Dio logger: [network.md](network.md), Clients.
+- `createBlocObserver` (`app/observability/bloc_logging.dart`) builds the
+  `TalkerBlocObserver` that `bootstrap.dart` installs. It logs errors in every flavor, and
+  outside `prod` also events with their `toString()` (OBS-7) and transitions (OBS-6). The Dio
+  logger: [network.md](network.md), Clients.
 
 ## Crash reporting
 

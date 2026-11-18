@@ -1,7 +1,8 @@
 # Tech Stack
 
-**Here:** the approved dependencies with their purpose, compatibility notes (why a version is
-held back or what an upgrade needs), deferred and excluded packages.
+**Here:** the approved dependencies with their purpose, the toolchain the starter was last
+verified with, compatibility notes (why a version is held back or what an upgrade needs),
+deferred and excluded packages.
 
 **Not here:** version constraints (`pubspec.yaml`) and resolved versions (`pubspec.lock`); how
 a dependency change is approved (`CLAUDE.md`, Working rules for this project); which layer may
@@ -63,16 +64,51 @@ SDK packages: `flutter`, `flutter_localizations`.
 
 SDK packages: `flutter_test`.
 
-## 3. Compatibility notes
+## 3. Verified toolchain
 
-- **`build_runner` is held back** at 2.16.x (resolved on Flutter 3.50.0: `build_runner`
-  2.16.1, `freezed` 4.0.3, analyzer 14.1.0). `build_runner` 2.17.1 moved to `build` 5,
-  which `injectable_generator` (up to 3.1.3) does not support; 2.17.0 is retracted.
+Verified on 2026-11-18: every step of [doc/workflow.md](../workflow.md), Verification, passed
+on this Flutter version. The Verification does not build the app, so the Android and iOS
+rows are what the repository and the developer's machine set on that date, not a build made
+on it. The compatibility notes below and the version-dependent values in
+[guide/setup.md](../guide/setup.md) hold for this toolchain.
+
+`.fvmrc` tracks `stable` ([guide/setup.md](../guide/setup.md), FVM), so a newer Flutter may
+already be in use; `tool/check_spec.dart` reports it ([doc/workflow.md](../workflow.md),
+Requirements). Update the table in the change that runs the Verification on a new
+Flutter version or changes a row. Dependabot updates none of these
+versions ([guide/setup.md](../guide/setup.md), Dependabot).
+
+| Tool | Version | Set by |
+|---|---|---|
+| Flutter | 3.50.0 | `.fvmrc` (`stable`) |
+| Dart | 3.14.0 | Flutter |
+| FVM | 4.3.1 | the developer's machine |
+| Gradle | 9.5.0 | `android/gradle/wrapper/gradle-wrapper.properties` |
+| Android Gradle Plugin | 9.3.1 | `android/settings.gradle.kts` |
+| Kotlin | 2.4.20 | `android/settings.gradle.kts` |
+| Google Services Gradle plugin | 4.4.4 | `android/settings.gradle.kts` |
+| Crashlytics Gradle plugin | 3.0.7 | `android/settings.gradle.kts` |
+| JDK | 17.0.12 | the developer's machine (`flutter config --jdk-dir`) |
+| JVM target | 17 | `android/app/build.gradle.kts` |
+| `desugar_jdk_libs` | 2.1.4 | `android/app/build.gradle.kts` |
+| Android NDK | 28.2.13676358 | Flutter (`flutter.ndkVersion`) |
+| Xcode | 27.2 | the developer's machine |
+| iOS Swift packages | resolved versions | `ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved` |
+| FlutterFire CLI | 1.4.1 | the developer's machine ([guide/setup.md](../guide/setup.md), Firebase) |
+
+Platform levels (`minSdk`, `compileSdk`, `targetSdk`, iOS deployment target):
+[guide/setup.md](../guide/setup.md), Platforms.
+
+## 4. Compatibility notes
+
+- **`build_runner` is held back** at 2.16.x (resolved on the verified Flutter version:
+  `build_runner` 2.16.1, `freezed` 4.0.3, analyzer 14.1.0). `build_runner` 2.17.1 moved to
+  `build` 5, which `injectable_generator` (up to 3.1.3) does not support; 2.17.0 is retracted.
   Revisit when `injectable_generator` is upgraded.
   If `pub get` cannot resolve, stop and report the conflict to the user; do not
   change versions or add overrides without approval.
-- **material_ui** replaces `package:flutter/material.dart`, which Flutter 3.50 reports as
-  deprecated.
+- **material_ui** replaces `package:flutter/material.dart`, which the verified Flutter version
+  reports as deprecated.
   Every `MaterialApp`, in the app and in tests, takes `appLocalizationsDelegates`
   (`presentation/_shared/l10n`): the translations of both libraries, because
   `material_ui` widgets do not read those of the legacy one. `talker_flutter`
@@ -84,6 +120,14 @@ SDK packages: `flutter_test`.
 - **freezed 4 breaking change:** the class rules are in
   [architecture.md](architecture.md), Entities and DTOs.
 - **FlutterFire packages** are released together. Upgrade all five at once.
+- **Kotlin Gradle Plugin warning:** the Android build warns that `firebase_analytics`,
+  `firebase_auth`, `firebase_core` and `firebase_crashlytics` apply the Kotlin Gradle Plugin.
+  Flutter says future versions will fail such builds, and `.fvmrc` tracks `stable`, so this
+  can break without a repository change. These plugins are at their latest versions (checked
+  on 2026-11-02), so the fix has to come from them. Setting `android.builtInKotlin=true` in
+  `android/gradle.properties` was tried and reverted: the warning stayed, and the app crashed
+  at startup with `ClassNotFoundException` for `ShareFileProvider` from `share_plus`. The
+  cause of that crash is not established.
 - **Talker packages** share one version. Upgrade them together.
 - **bloc line:** `flutter_bloc 9`, `bloc_test 10` and `bloc_concurrency 0.3` all target
   `bloc 9`. `bloc` itself is a transitive dependency. Upgrade them together.
@@ -97,13 +141,13 @@ SDK packages: `flutter_test`.
   when scheduled notifications are not used (package README). It is enabled in
   `android/app/build.gradle.kts` (`desugar_jdk_libs` version from the package README).
 
-## 4. Deferred
+## 5. Deferred
 
 - `google_sign_in` (7.x) together with Sign in with Apple. Apple App Store rules
   require offering Sign in with Apple when Google sign-in is offered on iOS.
 - `connectivity_plus`, only if an offline banner is needed.
 
-## 5. Intentionally not included
+## 6. Intentionally not included
 
 - **`hive_ce_generator` (^1.12.0):** Hive stores JSON strings produced by DTOs
   ([architecture.md](architecture.md), Local storage), so no type adapters are generated.

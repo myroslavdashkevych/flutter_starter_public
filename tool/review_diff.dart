@@ -1,6 +1,7 @@
-// Gives the change-reviewer agent (.claude/agents/change-reviewer.md) read
-// access to git without ever printing a never-read file (global CLAUDE.md,
-// section 5; project CLAUDE.md, Working rules). Permission rules match only
+// Gives the change-reviewer agent (.claude/agents/change-reviewer.md), and any
+// session, read access to git without a permission prompt and without ever
+// printing a never-read file: one listed in the agent access policy
+// (doc/spec/security.md, Agent access). Permission rules match only
 // the start of a command, so allowing `git diff*` or `git log*` would also
 // allow `git log -p` or a diff without paths. This tool builds every git
 // command itself: no flag from the caller ever reaches git, git runs without
@@ -49,53 +50,68 @@ const _defaultBranch = 'develop';
 /// Refs: branch and tag names, commit hashes, `HEAD~2`, `main^`.
 final _ref = RegExp(r'^[A-Za-z0-9._/~^-]+$');
 
-/// Never-read file names, matched anywhere in the repository, ignoring case.
-const _secretNames = {
-  'google-services.json',
-  'googleservice-info.plist',
-  'key.properties',
-};
+/// The agent access policy that lists the secret files
+/// (doc/spec/security.md, Agent access), relative to the repository root.
+const policyPath = '.claude/settings.json';
 
-/// Never-read extensions: keystores, certificates, provisioning profiles,
-/// App Store Connect and APNs keys.
-const _secretExtensions = [
-  '.jks',
-  '.keystore',
-  '.p12',
-  '.pfx',
-  '.p8',
-  '.pem',
-  '.mobileprovision',
-];
+final _readRule = RegExp(r'^Read\((.+)\)$');
 
-/// SSH private and public key names outside `.ssh/`: `id_rsa`, `id_ecdsa`,
-/// `id_ed25519`, with an optional `_<suffix>` and `.pub`.
-final _sshKeyName = RegExp(r'^id_(rsa|ecdsa|ed25519)(_[^.]*)?(\.pub)?$');
+/// The secret file patterns of the policy, read once from [policyPath]. A
+/// missing or broken policy throws, so no tool runs without the list.
+final List<RegExp> _policyPatterns = secretPatterns(
+  File(policyPath).readAsStringSync(),
+);
 
-/// Whether [path] is never read, printed or diffed. Matches, by file name
-/// anywhere in the repository and ignoring case: `google-services.json`,
-/// `GoogleService-Info.plist`, `firebase_options*.dart` (the generated
-/// Firebase options in lib/app/config/firebase/), `.env*`, `key.properties`,
-/// `*.jks`, `*.keystore`, `*.p12`, `*.pfx`, `*.p8`, `*.pem`,
-/// `*.mobileprovision`, `*service-account*.json`, SSH key names (`id_rsa*`,
-/// `id_ecdsa*`, `id_ed25519*`); and any path inside a `.ssh/` folder. Empty
-/// and `.` segments are ignored, so a trailing `/` or `/.` cannot hide the
-/// name.
-bool isNeverRead(String path) {
-  final segments = path
+/// The `Read(...)` entries of `permissions.deny` in [settingsJson] that can
+/// match a repository path, as patterns over a lower-case path. Entries for
+/// the home folder (`~/`) or an absolute path (`//`) are skipped. `/path` and
+/// `./path` start at the repository root; any other pattern matches at any
+/// depth, which never skips less than Claude Code does.
+List<RegExp> secretPatterns(String settingsJson) {
+  final settings = jsonDecode(settingsJson) as Map<String, dynamic>;
+  final permissions = settings['permissions'] as Map<String, dynamic>;
+  return [
+    for (final entry in (permissions['deny'] as List).cast<String>())
+      if (_readRule.firstMatch(entry)?[1] case final glob?)
+        if (!glob.startsWith('~/') && !glob.startsWith('//'))
+          RegExp('^${_globToRegExp(glob.toLowerCase())}\$'),
+  ];
+}
+
+String _globToRegExp(String glob) {
+  final anchored = glob.startsWith('/') || glob.startsWith('./');
+  var rest = anchored ? glob.substring(glob.indexOf('/') + 1) : glob;
+  if (rest.startsWith('**/')) rest = rest.substring(3);
+  final pattern = StringBuffer(anchored ? '' : '(?:.*/)?');
+  for (var i = 0; i < rest.length; i++) {
+    final char = rest[i];
+    if (rest.startsWith('**', i)) {
+      pattern.write('.*');
+      i++;
+    } else if (char == '*') {
+      pattern.write('[^/]*');
+    } else if (char == '?') {
+      pattern.write('[^/]');
+    } else {
+      pattern.write(RegExp.escape(char));
+    }
+  }
+  return pattern.toString();
+}
+
+/// Whether [path] is never read, printed or diffed: it matches a secret file
+/// pattern of the policy ([patterns] in tests), ignoring case. Empty and `.`
+/// segments are ignored, so a trailing `/` or `/.` cannot hide the name.
+bool isNeverRead(String path, {List<RegExp>? patterns}) {
+  final normalized = path
       .replaceAll(r'\', '/')
       .toLowerCase()
       .split('/')
       .where((segment) => segment.isNotEmpty && segment != '.')
-      .toList();
-  final name = segments.isEmpty ? '' : segments.last;
-  return segments.contains('.ssh') ||
-      _secretNames.contains(name) ||
-      name.startsWith('.env') ||
-      (name.startsWith('firebase_options') && name.endsWith('.dart')) ||
-      (name.contains('service-account') && name.endsWith('.json')) ||
-      _secretExtensions.any(name.endsWith) ||
-      _sshKeyName.hasMatch(name);
+      .join('/');
+  return (patterns ?? _policyPatterns).any(
+    (pattern) => pattern.hasMatch(normalized),
+  );
 }
 
 enum Mode { files, diff, log, show, search }

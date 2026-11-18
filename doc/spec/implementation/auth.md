@@ -1,6 +1,6 @@
-# Area: auth
+# Implementation: auth
 
-**Areas:** `domain/entity/app_user.dart`, `domain/repository/auth_repository.dart`,
+**Code:** `domain/entity/app_user.dart`, `domain/repository/auth_repository.dart`,
 `domain/use_case/auth` (account deletion: [profile.md](profile.md)), `data/auth`,
 `presentation/auth`. Behavior:
 [behavior/auth.md](../behavior/auth.md).

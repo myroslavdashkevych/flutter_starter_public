@@ -4,6 +4,7 @@ import 'package:flutter_starter/data/_shared/base/data_source/expiring_cache.dar
 import 'package:flutter_starter/data/character/model/cached_record_dto.dart';
 import 'package:flutter_starter/data/character/model/character_dto.dart';
 import 'package:flutter_starter/data/character/model/character_page_dto.dart';
+import 'package:flutter_starter/shared/utils/clock.dart';
 import 'package:hive_ce/hive_ce.dart';
 import 'package:injectable/injectable.dart';
 import 'package:talker/talker.dart';
@@ -13,9 +14,10 @@ import 'package:talker/talker.dart';
 /// skipped, and both are logged.
 @lazySingleton
 class CharacterHiveDataSource implements ExpiringCache {
-  CharacterHiveDataSource(this._hive, this._talker);
+  CharacterHiveDataSource(this._hive, this._clock, this._talker);
 
   final HiveInterface _hive;
+  final Clock _clock;
   final Talker _talker;
   Future<LazyBox<String>>? _box;
 
@@ -57,7 +59,7 @@ class CharacterHiveDataSource implements ExpiringCache {
   Future<void> evictExpired() async {
     try {
       final box = await _openBox();
-      final oldest = DateTime.now().subtract(maxAge);
+      final oldest = _clock.now().subtract(maxAge);
       final evicted = [
         for (final key in box.keys)
           if (!_isKept(await box.get(key), oldest)) key,
@@ -132,7 +134,7 @@ class CharacterHiveDataSource implements ExpiringCache {
   String _encode(Map<String, dynamic> json) => jsonEncode(
     CachedRecordDto(
       schemaVersion: schemaVersion,
-      fetchedAt: DateTime.now(),
+      fetchedAt: _clock.now(),
       data: json,
     ).toJson((data) => data),
   );

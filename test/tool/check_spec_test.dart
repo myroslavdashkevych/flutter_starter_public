@@ -42,6 +42,23 @@ const _characters = '''
 Retired: none
 ''';
 
+/// The Flutter row is on line 7 and the Dart row on line 8. The row below the
+/// next heading is outside the section.
+const _techStack = '''
+# Tech Stack
+
+## 3. Verified toolchain
+
+| Tool | Version | Set by |
+|---|---|---|
+| Flutter | 3.50.0 | `.fvmrc` |
+| Dart | 3.14.0 | Flutter |
+
+## 4. Compatibility notes
+
+| Dart | 1.0.0 | outside the section |
+''';
+
 const _fixtureTest = 'test/fixture_test.dart';
 final _definition = RegExp(r'^- \*\*([A-Z]+-\d+)\*\* ', multiLine: true);
 
@@ -757,6 +774,162 @@ void main() {
     });
   });
 
+  group('toolchain', () {
+    const sdk = (flutter: '3.50.0', dart: '3.14.0');
+
+    List<String> warnings(String techStack, SdkVersions? used) => [
+      for (final warning in checkToolchain(techStack, used)) '$warning',
+    ];
+
+    test('is clean when the table names the running versions', () {
+      expect(checkToolchain(_techStack, sdk), isEmpty);
+    });
+
+    test('finds the section without a number in its heading', () {
+      final techStack = _techStack.replaceFirst('## 3. ', '## ');
+
+      expect(checkToolchain(techStack, sdk), isEmpty);
+    });
+
+    test('warns at the Flutter row when Flutter differs', () {
+      expect(warnings(_techStack, (flutter: '3.51.0', dart: '3.14.0')), [
+        'doc/spec/tech-stack.md:7: toolchain: the table lists Flutter 3.50.0, '
+            'this run uses 3.51.0: run the Verification on it and update the '
+            'table',
+      ]);
+    });
+
+    test('warns at the Dart row when Dart differs', () {
+      expect(warnings(_techStack, (flutter: '3.50.0', dart: '3.15.0')), [
+        startsWith(
+          'doc/spec/tech-stack.md:8: toolchain: the table lists '
+          'Dart 3.14.0, this run uses 3.15.0',
+        ),
+      ]);
+    });
+
+    test('reads rows only inside the section', () {
+      final techStack = _techStack.replaceFirst(
+        '| Dart | 3.14.0 | Flutter |\n',
+        '',
+      );
+
+      expect(warnings(techStack, sdk), [
+        'doc/spec/tech-stack.md:3: toolchain: no Dart row',
+      ]);
+    });
+
+    test('warns when the section is missing', () {
+      expect(warnings('# Tech Stack\n', sdk), [
+        'doc/spec/tech-stack.md:1: toolchain: no "Verified toolchain" section',
+      ]);
+    });
+
+    test('warns at both rows when both differ', () {
+      expect(warnings(_techStack, (flutter: '3.51.0', dart: '3.15.0')), [
+        startsWith(
+          'doc/spec/tech-stack.md:7: toolchain: the table lists '
+          'Flutter 3.50.0',
+        ),
+        startsWith(
+          'doc/spec/tech-stack.md:8: toolchain: the table lists '
+          'Dart 3.14.0',
+        ),
+      ]);
+    });
+
+    test('warns when the Flutter row is missing', () {
+      final techStack = _techStack.replaceFirst(
+        '| Flutter | 3.50.0 | `.fvmrc` |\n',
+        '',
+      );
+
+      expect(warnings(techStack, sdk), [
+        'doc/spec/tech-stack.md:3: toolchain: no Flutter row',
+      ]);
+    });
+
+    test('reads a file with CRLF line endings', () {
+      final techStack = _techStack.replaceAll('\n', '\r\n');
+
+      expect(warnings(techStack, (flutter: '3.51.0', dart: '3.14.0')), [
+        startsWith(
+          'doc/spec/tech-stack.md:7: toolchain: the table lists '
+          'Flutter 3.50.0, this run uses 3.51.0:',
+        ),
+      ]);
+    });
+
+    test('reads the rows of a section that ends the file', () {
+      final techStack = _techStack.substring(0, _techStack.indexOf('## 4. '));
+
+      expect(checkToolchain(techStack, sdk), isEmpty);
+    });
+
+    test('reads the rows below a subsection of the section', () {
+      final techStack = _techStack.replaceFirst(
+        '| Tool |',
+        '### Versions\n\n| Tool |',
+      );
+
+      expect(checkToolchain(techStack, sdk), isEmpty);
+    });
+
+    test('warns when the running versions are unknown', () {
+      expect(warnings(_techStack, null), [
+        startsWith(
+          'doc/spec/tech-stack.md:3: toolchain: the Flutter version '
+          'of this run is unknown',
+        ),
+      ]);
+    });
+
+    group('readSdkVersions', () {
+      late Directory sdkRoot;
+      late String dart;
+
+      setUp(() {
+        sdkRoot = Directory.systemTemp.createTempSync('flutter_sdk');
+        dart = '${sdkRoot.path}/bin/cache/dart-sdk/bin/dart';
+      });
+      tearDown(() => sdkRoot.deleteSync(recursive: true));
+
+      void writeVersionFile(String content) {
+        File('${sdkRoot.path}/bin/cache/flutter.version.json')
+          ..createSync(recursive: true)
+          ..writeAsStringSync(content);
+      }
+
+      test('reads the version file of the SDK of the Dart executable', () {
+        writeVersionFile(
+          '{"frameworkVersion": "3.50.0", "dartSdkVersion": "3.14.0", '
+          '"channel": "stable"}',
+        );
+
+        expect(readSdkVersions(dartExecutable: dart), (
+          flutter: '3.50.0',
+          dart: '3.14.0',
+        ));
+      });
+
+      test('returns null without a version file', () {
+        expect(readSdkVersions(dartExecutable: dart), isNull);
+      });
+
+      test('returns null for a malformed version file', () {
+        writeVersionFile('{"frameworkVersion": 3}');
+
+        expect(readSdkVersions(dartExecutable: dart), isNull);
+      });
+
+      test('returns null for a version file that is not JSON', () {
+        writeVersionFile('not json');
+
+        expect(readSdkVersions(dartExecutable: dart), isNull);
+      });
+    });
+  });
+
   group('isChecked', () {
     test('reads docs, README, CLAUDE and own Dart code', () {
       for (final path in [
@@ -790,11 +963,7 @@ void main() {
     });
 
     test('skips never-read files', () {
-      for (final path in [
-        'lib/app/config/firebase/firebase_options_dev.dart',
-        'lib/app/config/firebase/firebase_options_prod.dart',
-        'doc/.env.md',
-      ]) {
+      for (final path in ['lib/app/config/.env.dart', 'doc/.env.md']) {
         expect(isChecked(path), isFalse, reason: path);
       }
     });
@@ -825,7 +994,7 @@ void main() {
     test('never opens a never-read file', () {
       writeFiles(_project({'README.md': '[a]($_favPath)\n'}));
       // Not valid UTF-8: reading it as a string would throw.
-      File('${root.path}/lib/app/config/firebase/firebase_options_dev.dart')
+      File('${root.path}/lib/app/config/.env.dart')
         ..createSync(recursive: true)
         ..writeAsBytesSync([0xff, 0xfe, 0xfd]);
       final out = StringBuffer();
@@ -855,6 +1024,70 @@ void main() {
         contains('README.md:1: reference: FAV-7 is not defined'),
       );
       expect(out.toString(), contains('1 spec violation(s).'));
+    });
+
+    test('prints a toolchain warning and still returns 0', () {
+      writeFiles(_project({'doc/spec/tech-stack.md': _techStack}));
+      final out = StringBuffer();
+
+      final code = run(
+        root,
+        out,
+        readSdk: () => (flutter: '3.51.0', dart: '3.14.0'),
+      );
+
+      expect(code, 0);
+      expect(
+        out.toString(),
+        contains(
+          'warning: doc/spec/tech-stack.md:7: toolchain: the table '
+          'lists Flutter 3.50.0, this run uses 3.51.0',
+        ),
+      );
+      expect(out.toString(), contains('No spec violations.'));
+    });
+
+    test('prints a toolchain warning as a GitHub annotation in CI', () {
+      writeFiles(_project({'doc/spec/tech-stack.md': _techStack}));
+      final out = StringBuffer();
+
+      run(
+        root,
+        out,
+        readSdk: () => (flutter: '3.51.0', dart: '3.14.0'),
+        githubActions: true,
+      );
+
+      expect(
+        out.toString(),
+        contains(
+          '::warning file=doc/spec/tech-stack.md,line=7::toolchain: '
+          'the table lists Flutter 3.50.0',
+        ),
+      );
+    });
+
+    test('escapes the message of a GitHub annotation', () {
+      writeFiles(_project({'doc/spec/tech-stack.md': _techStack}));
+      final out = StringBuffer();
+
+      run(
+        root,
+        out,
+        readSdk: () => (flutter: '3.51%\n0', dart: '3.14.0'),
+        githubActions: true,
+      );
+
+      expect(out.toString(), contains('this run uses 3.51%25%0A0:'));
+    });
+
+    test('skips the toolchain rule without a tech-stack file', () {
+      writeFiles(_project());
+      final out = StringBuffer();
+
+      run(root, out, readSdk: () => fail('the SDK was read'));
+
+      expect(out.toString(), isNot(contains('toolchain')));
     });
 
     test('skips change folders', () {

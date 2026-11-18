@@ -19,7 +19,8 @@ const _renameExcluded = {
   'test/tool/init_project_test.dart',
 };
 
-/// Firebase config directory: never opened, see CLAUDE.md.
+/// Firebase options directory: never renamed, since `flutterfire configure`
+/// regenerates it for the new Firebase projects.
 const _firebaseOptionsDir = 'lib/app/config/firebase/';
 
 const _usage = '''
